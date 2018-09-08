@@ -3,8 +3,6 @@ svg {
 	border-style: solid;
 }
 
-.hover {
-	circle {
-		background-color: white;
-	}
+.hover circle {
+	fill: white;
 }

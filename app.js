@@ -4,19 +4,44 @@ window.onload = function() {
 	var width = window.innerWidth*0.8,
 		height = 500;
 	var nodes = new Array();
+	var mouseOverCircle = false;
 	nodes.push(new Node("példa 1",300,200));
 	nodes.push(new Node("példa 2",100,300));
+
 
 	d3.select("body").append("h1").text("Üdv!");
 
 	var svg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height)
-		.on("mouseover",redraw)
 		.on("click", createNode)
 		.call(d3.zoom()
 	        //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
-	        .on("zoom", zoom));
+	        .on("zoom",zoom)
+	    );
+
+    // define arrow markers for graph links
+    var defs = svg.append('svg:defs');
+    defs.append('svg:marker')
+      .attr('id', 'end-arrow')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', "32")
+      .attr('markerWidth', 3.5)
+      .attr('markerHeight', 3.5)
+      .attr('orient', 'auto')
+      .append('svg:path')
+      .attr('d', 'M0,-5L10,0L0,5');
+
+    // define arrow markers for leading arrow
+    defs.append('svg:marker')
+      .attr('id', 'mark-end-arrow')
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 7)
+      .attr('markerWidth', 3.5)
+      .attr('markerHeight', 3.5)
+      .attr('orient', 'auto')
+      .append('svg:path')
+      .attr('d', 'M0,-5L10,0L0,5');
 
 	var g = svg.append("g")
 		.attr("id","graph");
@@ -34,15 +59,21 @@ window.onload = function() {
 				return "translate("+d.x+","+d.y+")"
 			})
 			.on("mouseenter", function(){
+				mouseOverCircle = true;
 				d3.select(this).classed("hover",true);
 			})
+			.on("click",function(d,i){
+				alert("Here will be the info of the node/task."
+					+"\nThis node has the text \""+d.txt+"\" on it."
+					+"\nIts ID is "+i+".")})
 			.on("mouseleave", function(){
+				mouseOverCircle = false;
 				d3.select(this).classed("hover",false);
 			});
 		g.append("circle")
 			.attr("r", 40)
 			.attr("fill","lightblue")
-			.attr("stroke","gray");
+			.attr("stroke","gray")
 
 		g.each(function(d) {
 			insertText(d3.select(this), d.txt)
@@ -60,6 +91,7 @@ window.onload = function() {
 			redraw();
 		};
 	}
+	redraw();
 };
 
 
