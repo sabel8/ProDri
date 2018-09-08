@@ -1,6 +1,15 @@
 svg {
 	border-color: black;
 	border-style: solid;
+	cursor: move;
+}
+
+g, text {
+	cursor: pointer;
+}
+
+text:hover{
+	text-decoration: underline;
 }
 
 .hover circle {

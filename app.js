@@ -4,6 +4,7 @@ window.onload = function() {
 	var width = window.innerWidth*0.8,
 		height = 500;
 	var nodes = new Array();
+	var disableMove=true;
 	var mouseOverCircle = false;
 	nodes.push(new Node("példa 1",300,200));
 	nodes.push(new Node("példa 2",100,300));
@@ -16,9 +17,8 @@ window.onload = function() {
 		.attr("height", height)
 		.on("click", createNode)
 		.call(d3.zoom()
-	        //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
-	        .on("zoom",zoom)
-	    );
+		    //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
+		    .on("zoom",zoom));
 
     // define arrow markers for graph links
     var defs = svg.append('svg:defs');
@@ -44,7 +44,8 @@ window.onload = function() {
       .attr('d', 'M0,-5L10,0L0,5');
 
 	var g = svg.append("g")
-		.attr("id","graph");
+		.attr("id","graph")
+		.style("cursor","move");
 
 	function zoom() {
 		d3.select("#graph").attr("transform", d3.event.transform);
@@ -69,6 +70,18 @@ window.onload = function() {
 			.on("mouseleave", function(){
 				mouseOverCircle = false;
 				d3.select(this).classed("hover",false);
+			})
+			.on("mousedown", function(d){
+				if (d3.event.shiftKey) {
+					let x= d.x;
+					let y= d.y;
+					d3.select("#graph").append("path")
+						.attr("d",function(){
+							let e = d3.mouse(d3.select("#graph").node());
+							return "M"+x+","+y+"L"+e[0]+","+e[1];
+						})
+						.style("stroke","red");
+				}
 			});
 		g.append("circle")
 			.attr("r", 40)
@@ -107,6 +120,11 @@ Node.prototype.toString = function() {
 }
 
 insertText = function (gEl, title) {
+	//returns if no valid title passed
+	if(title==null){
+		return;
+	}
+
 	//count the words
     var words = title.split(/\s+/g),
         nwords = words.length;
