@@ -2,3 +2,9 @@ svg {
 	border-color: black;
 	border-style: solid;
 }
+
+.hover {
+	circle {
+		background-color: white;
+	}
+}

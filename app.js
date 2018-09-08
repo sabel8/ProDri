@@ -13,19 +13,13 @@ window.onload = function() {
 		.attr("width", width)
 		.attr("height", height)
 		.on("mouseover",redraw)
-		.on("click", createNode);
+		.on("click", createNode)
+		.call(d3.zoom()
+	        //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
+	        .on("zoom", zoom));
 
 	var g = svg.append("g")
 		.attr("id","graph");
-
-	svg.append("rect")
-	    .attr("fill", "none")
-	    .attr("pointer-events", "all")
-	    .attr("width", width)
-	    .attr("height", height)
-	    .call(d3.zoom()
-	        //.scaleExtent([1, 8]) this modifies the maximum rate of the zoom
-	        .on("zoom", zoom));
 
 	function zoom() {
 		d3.select("#graph").attr("transform", d3.event.transform);
@@ -38,18 +32,17 @@ window.onload = function() {
 			.append("g")
 			.attr("transform", function(d){
 				return "translate("+d.x+","+d.y+")"
+			})
+			.on("mouseenter", function(){
+				d3.select(this).classed("hover",true);
+			})
+			.on("mouseleave", function(){
+				d3.select(this).classed("hover",false);
 			});
 		g.append("circle")
 			.attr("r", 40)
 			.attr("fill","lightblue")
-			.attr("stroke","gray")
-			//.attr("transform", function(d) { return "translate(" + d + ")"; })
-			.on("mouseover", function(){
-				d3.select(this).attr("fill","white");
-			})
-			.on("mouseout", function() {
-				d3.select(this).attr("fill","lightblue");
-		});
+			.attr("stroke","gray");
 
 		g.each(function(d) {
 			insertText(d3.select(this), d.txt)
@@ -59,7 +52,8 @@ window.onload = function() {
 
 	function createNode(){
 		if (d3.event.shiftKey) {
-			let event = d3.mouse(this);
+
+			let event = d3.mouse(d3.select("#graph").node());
 			let txt = prompt("Please enter the title of the task", "Példa egy");
 			let a = new Node(txt,event[0],event[1]);
 			nodes.push(a);
