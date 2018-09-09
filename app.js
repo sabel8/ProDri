@@ -3,7 +3,8 @@
 window.onload = function() {
 	var width = window.innerWidth*0.8,
 		height = 500;
-	var nodes = new Array();
+	var nodes = new Array(),
+		edges = new Array();
 	nodes.push(new Node(0,"példa 1",300,200));
 	nodes.push(new Node(1,"példa 2",100,300));
 
@@ -27,7 +28,10 @@ window.onload = function() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
 
-	var mousePos;
+	var toNode, fromNode, mousePos;
+	var diffFromCursor = 10,
+		circleRadius = 40,
+		edgeWidth = 3;
 
 	function redraw(){
 		var g = d3.select("#graph").selectAll("g")
@@ -37,7 +41,8 @@ window.onload = function() {
 			.attr("transform", function(d){
 				return "translate("+d.x+","+d.y+")"
 			})
-			.on("mouseenter", function(){
+			.on("mouseenter", function(d){
+				toNode = d;
 				d3.select(this).classed("hover",true);
 			})
 			.on("click",function(d,i){
@@ -45,32 +50,54 @@ window.onload = function() {
 					+"\nThis node has the text \""+d.txt+"\" on it."
 					+"\nIts ID is "+d.ID+".")})
 			.on("mouseleave", function(){
-				d3.select(this).classed("hover",false);
+				toNode = null;
+				d3.select(this).attr("class",null);
 			})
 			.on("mousedown", function(d){
 				mousePos = d3.mouse(this);
-				d3.select("#graph").append("path")
-		        .attr('d', 'M' + d.x + ',' + d.y + 'L' + d.x + ',' + d.y);
 			})
 			.call(d3.drag()
 				.on("start", dragstarted)
 	            .on("drag", dragged)
 	            .on("end", dragend));
-
+		//adding nodes from array	
 		g.append("circle")
-			.attr("r", 40)
+			.attr("r", circleRadius)
 			.attr("fill","lightblue")
-			.attr("stroke","gray")
+			.attr("stroke","gray");
 
 		g.each(function(d) {
 			insertText(d3.select(this), d.txt)
 		});
+
+
+		var e = d3.select("#graph").selectAll("g")
+			.data(edges)
+			.enter()
+			.append("path")
+			.attr("d",function(d,i) {
+				let from = nodes[d.fromNodeID];
+				let to = nodes[d.toNodeID];
+				let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
+				console.log(i+" "+dir);
+				return dir;
+			})
+			.attr("stroke","black")
+			.attr("stroke-width",edgeWidth);
+		console.log(edges);
+		d3.selectAll("#new").remove();
 	}
 
 	function dragstarted(d) {
 		event.stopPropagation();
-		d3.select("#graph").append("path").attr("id","new");
-		let e = d3.event;/*
+		let e = d3.event;
+		fromNode=d;
+		if (document.getElementById('new')===null)
+		d3.select("#graph").append("path")
+			.attr("id","new")
+			.attr("stroke","black")
+			.attr("stroke-width",edgeWidth);
+		/*console.log(d);
 		console.log(mousePos);
 		console.log("event:  "+e.x+","+e.y);
 		console.log("circle: "+d.x+","+d.y);*/
@@ -80,17 +107,33 @@ window.onload = function() {
 		let e = d3.event;
 		let mouseX = e.x+mousePos[0];
 		let mouseY = e.y+mousePos[1];
+		let diffX=e.x-d.x;
+		let diffY=e.y-d.y;
+		if (diffX>0){
+			mouseX-=diffFromCursor
+		}else{
+			mouseX+=diffFromCursor
+		}
+		if (diffY>0){
+			mouseY-=diffFromCursor
+		}else{
+			mouseY+=diffFromCursor
+		}
 		d3.select("#new")
-			.attr("d","M"+d.x+","+d.y+"L"+mouseX+","+mouseY+"Z")
-			.attr("stroke","black")
-			.attr("stroke-width","5");
-		//redraw();
+			.attr("d","M"+d.x+","+d.y+"L"+mouseX+","+mouseY);
 	}
 	
 	function dragend(d) {
-
+		createEdge();
+		redraw();
 	}
 
+	function createEdge() {
+		if (toNode!=null) {
+			var a = new Edge(edges.length,fromNode.ID,toNode.ID);
+			edges.push(a);
+		}
+	}
 	
 
 	function createNode(){
@@ -108,19 +151,21 @@ window.onload = function() {
 };
 
 
+//NODE CLASS
 //constructor of the Node element
-function Node(ID, txt, x, y) {
-	this.ID = ID;
-	this.txt = txt;
-	this.x = x;
-	this.y = y;
+class Node {
+	constructor(ID, txt, x, y){
+		this.ID = ID;
+		this.txt = txt;
+		this.x = x;
+		this.y = y;
+		this.toString = function(){
+			return "text: "+this.txt+" x: "+this.x+" y: "+y;
+		}
+	}
 }
 
-Node.prototype.toString = function() {
-  return "text: "+this.text+" x: "+this.x+" y: "+y;
-}
-
-insertText = function (gEl, title) {
+function insertText(gEl, title) {
 	//returns if no valid title passed
 	if(title==null){
 		return;
@@ -143,3 +188,16 @@ insertText = function (gEl, title) {
     }
 };
 
+//EDGE CLASS
+class Edge {
+	constructor(ID,fromNodeID,toNodeID) {
+		this.ID = ID;
+		this.fromNodeID = fromNodeID;
+		this.toNodeID = toNodeID;
+		this.toString = function(){
+			return "ID: "+this.ID+"; fromNodeID: "+this.fromNodeID
+			+"; toNodeID: "+toNodeID+";";
+		}
+	}
+
+}
