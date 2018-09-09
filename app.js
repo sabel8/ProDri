@@ -20,28 +20,6 @@ window.onload = function() {
 		    //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
 		    .on("zoom",zoom));
 
-    // define arrow markers for graph links
-    var defs = svg.append('svg:defs');
-    defs.append('svg:marker')
-      .attr('id', 'end-arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', "32")
-      .attr('markerWidth', 3.5)
-      .attr('markerHeight', 3.5)
-      .attr('orient', 'auto')
-      .append('svg:path')
-      .attr('d', 'M0,-5L10,0L0,5');
-
-    // define arrow markers for leading arrow
-    defs.append('svg:marker')
-      .attr('id', 'mark-end-arrow')
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 7)
-      .attr('markerWidth', 3.5)
-      .attr('markerHeight', 3.5)
-      .attr('orient', 'auto')
-      .append('svg:path')
-      .attr('d', 'M0,-5L10,0L0,5');
 
 	var g = svg.append("g")
 		.attr("id","graph")
@@ -70,18 +48,6 @@ window.onload = function() {
 			.on("mouseleave", function(){
 				mouseOverCircle = false;
 				d3.select(this).classed("hover",false);
-			})
-			.on("mousedown", function(d){
-				if (d3.event.shiftKey) {
-					let x= d.x;
-					let y= d.y;
-					d3.select("#graph").append("path")
-						.attr("d",function(){
-							let e = d3.mouse(d3.select("#graph").node());
-							return "M"+x+","+y+"L"+e[0]+","+e[1];
-						})
-						.style("stroke","red");
-				}
 			});
 		g.append("circle")
 			.attr("r", 40)
@@ -99,6 +65,7 @@ window.onload = function() {
 
 			let event = d3.mouse(d3.select("#graph").node());
 			let txt = prompt("Please enter the title of the task", "Példa egy");
+			if (txt===null){return;}
 			let a = new Node(txt,event[0],event[1]);
 			nodes.push(a);
 			redraw();
