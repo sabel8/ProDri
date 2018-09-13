@@ -1,12 +1,13 @@
 
-
+//the whole functionality starts after the page has loaded
 window.onload = function() {
 	var width = window.innerWidth*0.8,
 		height = 500;
 	var nodes = new Array(),
 		edges = new Array();
-	nodes.push(new Node(0,"példa 1",300,200));
-	nodes.push(new Node(1,"példa 2",100,300));
+	nodes.push(new Node(0,"példa 0",300,200));
+	nodes.push(new Node(1,"példa 1",100,300));
+	nodes.push(new Node(2,"példa 2",500,200));
 
 
 	d3.select("body").append("h1").text("Üdv!");
@@ -34,6 +35,9 @@ window.onload = function() {
 		edgeWidth = 3;
 
 	function redraw(){
+		//clearing pathes to be able to redraw them
+		d3.selectAll("path").remove();
+
 		var g = d3.select("#graph").selectAll("g")
 			.data(nodes)
 			.enter()
@@ -71,25 +75,26 @@ window.onload = function() {
 		});
 
 
-		var e = d3.select("#graph").selectAll("g")
-			.data(edges)
-			.enter()
-			.append("path")
-			.attr("d",function(d,i) {
-				let from = nodes[d.fromNodeID];
-				let to = nodes[d.toNodeID];
-				let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
-				console.log(i+" "+dir);
-				return dir;
-			})
-			.attr("stroke","black")
-			.attr("stroke-width",edgeWidth);
-		console.log(edges);
+		var e = d3.select("#graph");
+		for(let i=0;i<edges.length;i++){
+			e.append("path")
+				.attr("d",function() {
+					let currentEdge = edges[i];
+					let from = nodes[currentEdge.fromNodeID];
+					let to = nodes[currentEdge.toNodeID];
+					let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
+					console.log(i+" "+dir);
+					return dir;
+				})
+				.attr("stroke","black")
+				.attr("stroke-width",edgeWidth);
+		}
+
+
 		d3.selectAll("#new").remove();
 	}
 
 	function dragstarted(d) {
-		event.stopPropagation();
 		let e = d3.event;
 		fromNode=d;
 		if (document.getElementById('new')===null)
@@ -133,6 +138,7 @@ window.onload = function() {
 			var a = new Edge(edges.length,fromNode.ID,toNode.ID);
 			edges.push(a);
 		}
+		//console.log(edges);
 	}
 	
 
