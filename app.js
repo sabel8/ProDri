@@ -3,6 +3,12 @@
 window.onload = function() {
 	var width = window.innerWidth*0.8,
 		height = 500;
+
+	var toNode, fromNode, mousePos;
+	var diffFromCursor = 10,
+		circleRadius = 40,
+		edgeWidth = 3;
+
 	var nodes = new Array(),
 		edges = new Array();
 	nodes.push(new Node(0,"példa 0",300,200));
@@ -20,6 +26,15 @@ window.onload = function() {
 		    //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
 		    .on("zoom",zoom));
 
+    //defining the arrow which later will serve
+    //as the marker-end for the edge-pathes
+    svg.append("defs").append("marker")
+		.attr("id","arrowhead")
+		.attr("viewBox","0 0 10 10")
+		.attr("refX",circleRadius-10).attr("refY",5)
+		.attr("markerWidth",6).attr("markerHeight",6)
+		.attr("orient","auto-start-reverse")
+		.append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
 
 	var g = svg.append("g")
 		.attr("id","graph")
@@ -29,14 +44,33 @@ window.onload = function() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
 
-	var toNode, fromNode, mousePos;
-	var diffFromCursor = 10,
-		circleRadius = 40,
-		edgeWidth = 3;
+	
+
 
 	function redraw(){
 		//clearing pathes to be able to redraw them
-		d3.selectAll("path").remove();
+		d3.selectAll("#edge").remove();
+
+		//iterating through the edge array and creating
+		//the corresponding SVG PATH elements
+		for(let i=0;i<edges.length;i++){
+			d3.select("#graph").append("path")
+				.attr("id","edge")
+				.attr("d",function() {
+					let currentEdge = edges[i];
+					let from = nodes[currentEdge.fromNodeID];
+					let to = nodes[currentEdge.toNodeID];
+					let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
+					return dir;
+				})
+				.attr("stroke","black")
+				.attr("stroke-width",edgeWidth)
+				.attr("marker-end","url(#arrowhead)");
+		}
+
+		//<use xlink:href="#one"/>
+
+		var geez = d3.select("#graph").selectAll("g").remove();
 
 		var g = d3.select("#graph").selectAll("g")
 			.data(nodes)
@@ -68,27 +102,13 @@ window.onload = function() {
 		g.append("circle")
 			.attr("r", circleRadius)
 			.attr("fill","lightblue")
-			.attr("stroke","gray");
+			.attr("stroke","black");
 
 		g.each(function(d) {
 			insertText(d3.select(this), d.txt)
 		});
 
-
-		var e = d3.select("#graph");
-		for(let i=0;i<edges.length;i++){
-			e.append("path")
-				.attr("d",function() {
-					let currentEdge = edges[i];
-					let from = nodes[currentEdge.fromNodeID];
-					let to = nodes[currentEdge.toNodeID];
-					let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
-					console.log(i+" "+dir);
-					return dir;
-				})
-				.attr("stroke","black")
-				.attr("stroke-width",edgeWidth);
-		}
+		
 
 
 		d3.selectAll("#new").remove();
@@ -102,10 +122,6 @@ window.onload = function() {
 			.attr("id","new")
 			.attr("stroke","black")
 			.attr("stroke-width",edgeWidth);
-		/*console.log(d);
-		console.log(mousePos);
-		console.log("event:  "+e.x+","+e.y);
-		console.log("circle: "+d.x+","+d.y);*/
 	}
 	
 	function dragged(d){
@@ -134,11 +150,16 @@ window.onload = function() {
 	}
 
 	function createEdge() {
+		//if mouse is released without
+		//hovering over any edge
 		if (toNode!=null) {
-			var a = new Edge(edges.length,fromNode.ID,toNode.ID);
-			edges.push(a);
+			//if the user drags the line to the same node
+			//it aborts the creation process of the edge
+			if (toNode.ID!=fromNode.ID){
+				var a = new Edge(edges.length,fromNode.ID,toNode.ID);
+				edges.push(a);
+			}
 		}
-		//console.log(edges);
 	}
 	
 
