@@ -1,23 +1,38 @@
 
 //the whole functionality starts after the page has loaded
 window.onload = function() {
+
+	//dimensions for the main svg element
 	var width = window.innerWidth*0.8,
 		height = 500;
 
+	//defining variables for edge drawing
+	//mousePos: start of dragging in coordinates
+	//fromNode: the node where the dragging started
 	var toNode, fromNode, mousePos;
+
+	//desing values for svg elements
+	//speaks for themselves...
 	var diffFromCursor = 10,
 		circleRadius = 40,
 		edgeWidth = 3;
 
+	//defining the arrays which holds the data
+	//of the nodes and the edges
 	var nodes = new Array(),
 		edges = new Array();
+
+	//SAPMLE VALUES FOR REPRESENTATION
+	//AND TESTING PURPOSES
 	nodes.push(new Node(0,"példa 0",300,200));
 	nodes.push(new Node(1,"példa 1",100,300));
 	nodes.push(new Node(2,"példa 2",500,200));
 
-
+	//testing :D
 	d3.select("body").append("h1").text("Üdv!");
 
+	//adding the main svg element to the Body
+	//zoom functionality linked here to zoom function
 	var svg = d3.select("body").append("svg")
 		.attr("width", width)
 		.attr("height", height)
@@ -36,20 +51,26 @@ window.onload = function() {
 		.attr("orient","auto-start-reverse")
 		.append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
 
+	//this g element holds every node and edge
 	var g = svg.append("g")
 		.attr("id","graph")
 		.style("cursor","move");
 
+	//zoom functionality
 	function zoom() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
 
 	
 
-
+	//this function is called if there is any 
+	//DATA RELATED interaction on the svg
+	//so, zoom does not call this
 	function redraw(){
 		//clearing pathes to be able to redraw them
 		d3.selectAll("#edge").remove();
+		//clearing nodes to be able to redraw them
+		d3.select("#graph").selectAll("g").remove();
 
 		//iterating through the edge array and creating
 		//the corresponding SVG PATH elements
@@ -68,10 +89,9 @@ window.onload = function() {
 				.attr("marker-end","url(#arrowhead)");
 		}
 
-		//<use xlink:href="#one"/>
-
-		var geez = d3.select("#graph").selectAll("g").remove();
-
+		//drawing nodes with d3 from the array
+		//in a separate g element which
+		//hold the node's label too
 		var g = d3.select("#graph").selectAll("g")
 			.data(nodes)
 			.enter()
@@ -98,24 +118,25 @@ window.onload = function() {
 				.on("start", dragstarted)
 	            .on("drag", dragged)
 	            .on("end", dragend));
-		//adding nodes from array	
+
+		//adding nodes from array
 		g.append("circle")
 			.attr("r", circleRadius)
 			.attr("fill","lightblue")
 			.attr("stroke","black");
 
+		//adds the corresponding label to each node
 		g.each(function(d) {
 			insertText(d3.select(this), d.txt)
 		});
 
-		
-
-
+		//removes the dragged uncomplete edge
 		d3.selectAll("#new").remove();
 	}
 
+	//drag start, (creates if necessary and)
+	//draws a temporary edge
 	function dragstarted(d) {
-		let e = d3.event;
 		fromNode=d;
 		if (document.getElementById('new')===null)
 		d3.select("#graph").append("path")
@@ -124,6 +145,7 @@ window.onload = function() {
 			.attr("stroke-width",edgeWidth);
 	}
 	
+	//dragging, redraws the temporary edge
 	function dragged(d){
 		let e = d3.event;
 		let mouseX = e.x+mousePos[0];
@@ -144,11 +166,14 @@ window.onload = function() {
 			.attr("d","M"+d.x+","+d.y+"L"+mouseX+","+mouseY);
 	}
 	
+	//drag end
 	function dragend(d) {
 		createEdge();
 		redraw();
 	}
 
+	//creates a new edge and pushes it to the array
+	//if it passes validation
 	function createEdge() {
 		//if mouse is released without
 		//hovering over any edge
@@ -162,7 +187,7 @@ window.onload = function() {
 		}
 	}
 	
-
+	//creates nodes on shift+click
 	function createNode(){
 		if (d3.event.shiftKey) {
 			let event = d3.mouse(d3.select("#graph").node());
@@ -172,7 +197,6 @@ window.onload = function() {
 		}
 		redraw();
 	}
-
 
 	redraw();
 };
@@ -192,6 +216,7 @@ class Node {
 	}
 }
 
+//seperates the tex into words for readability
 function insertText(gEl, title) {
 	//returns if no valid title passed
 	if(title==null){

@@ -1,4 +1,9 @@
+body {
+	background-color: grey; /*dark mode for night dev sessions*/
+}
+
 svg {
+	background-color: lightgrey;
 	border-color: black;
 	border-style: solid;
 	cursor: move;
