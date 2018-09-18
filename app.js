@@ -9,11 +9,11 @@ window.onload = function() {
 	//defining variables for edge drawing
 	//mousePos: start of dragging in coordinates
 	//fromNode: the node where the dragging started
-	var toNode, fromNode, mousePos;
+	var toNode, fromNode, mousePos, shiftKeyPressed=false;
 
 	//desing values for svg elements
 	//speaks for themselves...
-	var diffFromCursor = 10,
+	var diffFromCursor = 0.98,
 		circleRadius = 40,
 		edgeWidth = 3;
 
@@ -37,6 +37,7 @@ window.onload = function() {
 		.attr("width", width)
 		.attr("height", height)
 		.on("click", createNode)
+		.on("mouseup", function(){shiftKeyPressed = false})
 		.call(d3.zoom()
 		    //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
 		    .on("zoom",zoom));
@@ -47,6 +48,14 @@ window.onload = function() {
 		.attr("id","arrowhead")
 		.attr("viewBox","0 0 10 10")
 		.attr("refX",circleRadius-10).attr("refY",5)
+		.attr("markerWidth",6).attr("markerHeight",6)
+		.attr("orient","auto-start-reverse")
+		.append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
+
+	svg.append("defs").append("marker")
+		.attr("id","arrowheadTemp")
+		.attr("viewBox","0 0 10 10")
+		.attr("refX",5).attr("refY",5)
 		.attr("markerWidth",6).attr("markerHeight",6)
 		.attr("orient","auto-start-reverse")
 		.append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
@@ -112,6 +121,9 @@ window.onload = function() {
 				d3.select(this).attr("class",null);
 			})
 			.on("mousedown", function(d){
+				if (d3.event.shiftKey) {
+					shiftKeyPressed = true;
+				}
 				mousePos = d3.mouse(this);
 			})
 			.call(d3.drag()
@@ -137,44 +149,41 @@ window.onload = function() {
 	//drag start, (creates if necessary and)
 	//draws a temporary edge
 	function dragstarted(d) {
-		fromNode=d;
-		if (document.getElementById('new')===null)
-		d3.select("#graph").append("path")
-			.attr("id","new")
-			.attr("stroke","black")
-			.attr("stroke-width",edgeWidth);
+		if (shiftKeyPressed===true) {
+			fromNode=d;
+			if (document.getElementById('new')===null)
+			d3.select("#graph").append("path")
+				.attr("id","new")
+				.attr("stroke","black")
+				.attr("stroke-width",edgeWidth)
+				.attr("marker-end","url(#arrowheadTemp)");
+		}
 	}
 	
 	//dragging, redraws the temporary edge
+	//calculates
 	function dragged(d){
 		let e = d3.event;
 		let mouseX = e.x+mousePos[0];
 		let mouseY = e.y+mousePos[1];
 		let diffX=e.x-d.x;
 		let diffY=e.y-d.y;
-		if (diffX>0){
-			mouseX-=diffFromCursor
-		}else{
-			mouseX+=diffFromCursor
-		}
-		if (diffY>0){
-			mouseY-=diffFromCursor
-		}else{
-			mouseY+=diffFromCursor
-		}
+		let moveEdgeX=(mouseX-d.x)*diffFromCursor;
+		let moveEdgeY=(mouseY-d.y)*diffFromCursor;
 		d3.select("#new")
-			.attr("d","M"+d.x+","+d.y+"L"+mouseX+","+mouseY);
+			.attr("d","M"+d.x+","+d.y+"l"+moveEdgeX+","+moveEdgeY);
 	}
 	
 	//drag end
 	function dragend(d) {
 		createEdge();
-		redraw();
+		console.log(edges)
 	}
 
 	//creates a new edge and pushes it to the array
 	//if it passes validation
 	function createEdge() {
+		if(shiftKeyPressed===true){
 		//if mouse is released without
 		//hovering over any edge
 		if (toNode!=null) {
@@ -185,6 +194,7 @@ window.onload = function() {
 				edges.push(a);
 			}
 		}
+		redraw();}
 	}
 	
 	//creates nodes on shift+click
