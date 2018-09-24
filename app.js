@@ -24,9 +24,14 @@ window.onload = function() {
 
 	//SAPMLE VALUES FOR REPRESENTATION
 	//AND TESTING PURPOSES
-	nodes.push(new Node(0,"példa 0",300,200));
-	nodes.push(new Node(1,"példa 1",100,300));
-	nodes.push(new Node(2,"példa 2",500,200));
+	nodes.push(new Node(0,"példa 0",300,200,0));
+	nodes.push(new Node(1,"példa 1",100,300,1));
+	nodes.push(new Node(2,"példa 2",500,200,0));
+	nodes.push(new Node(3,"példa 3",400,350,0));
+	edges.push(new Edge(0,1,0));
+	edges.push(new Edge(1,0,2));
+	edges.push(new Edge(2,1,3));
+	edges.push(new Edge(3,3,2));
 
 	//testing :D
 	d3.select("body").append("h1").text("Üdv!");
@@ -113,9 +118,23 @@ window.onload = function() {
 				d3.select(this).classed("hover",true);
 			})
 			.on("click",function(d,i){
-				alert("Here will be the info of the node/task."
-					+"\nThis node has the text \""+d.txt+"\" on it."
-					+"\nIts ID is "+d.ID+".")})
+				if (d3.event.ctrlKey) {
+					if(nodes[i].status === 0){
+						alert("Cannot change this node's status.");
+						return;
+					}
+					if (nodes[i].status!=2) {
+						nodes[i].status++;
+					}
+					verifyStatus();
+					console.log("lefutott")
+				} else
+					alert("Here will be the info of the node/task."
+						+"\nThis node has the text \""+d.txt+"\" on it."
+						+"\nIts ID is "+d.ID+"."
+						+"\nIts status is "+d.getStatus());
+
+			})
 			.on("mouseleave", function(){
 				toNode = null;
 				d3.select(this).attr("class",null);
@@ -134,8 +153,9 @@ window.onload = function() {
 		//adding nodes from array
 		g.append("circle")
 			.attr("r", circleRadius)
-			.attr("fill","lightblue")
+			.attr("fill",function(d){return d.getColor()})
 			.attr("stroke","black");
+
 
 		//adds the corresponding label to each node
 		g.each(function(d) {
@@ -144,6 +164,29 @@ window.onload = function() {
 
 		//removes the dragged uncomplete edge
 		d3.selectAll("#new").remove();
+	}
+
+
+	//this function triggers nodes
+	//according to their status
+	function verifyStatus() {
+		for (var i = 0;i<nodes.length;i++) {
+			var aktNode = nodes[i];
+			var allPreviousDone = true;
+			for (var j = 0;j<edges.length;j++) {
+				var aktEdge = edges[j];
+				
+				if (aktEdge.toNodeID===aktNode.ID) {
+					if (nodes[aktEdge.fromNodeID].status!=2) {
+						allPreviousDone=false;
+					}
+			}}
+			if (allPreviousDone===true) {
+				if (nodes[i].status===0){
+					nodes[i].status++;
+				}
+			}
+		}
 	}
 
 	//drag start, (creates if necessary and)
@@ -177,24 +220,47 @@ window.onload = function() {
 	//drag end
 	function dragend(d) {
 		createEdge();
-		console.log(edges)
+		shiftKeyPressed=false;
 	}
 
 	//creates a new edge and pushes it to the array
 	//if it passes validation
 	function createEdge() {
 		if(shiftKeyPressed===true){
-		//if mouse is released without
-		//hovering over any edge
-		if (toNode!=null) {
-			//if the user drags the line to the same node
-			//it aborts the creation process of the edge
-			if (toNode.ID!=fromNode.ID){
-				var a = new Edge(edges.length,fromNode.ID,toNode.ID);
-				edges.push(a);
+
+			//if mouse is released without
+			//hovering over any edge
+			if (toNode!=null) {
+
+				//if the user drags the line to the same node
+				//it aborts the creation process of the edge
+				if (toNode.ID!=fromNode.ID){
+					var a = new Edge(edges.length,fromNode.ID,toNode.ID);
+
+					let isValidEdge = true;
+
+					//iterating through the edge array
+					//for validating the edge
+					for (var i = 0;i<edges.length;i++) {
+						let akt = edges[i];
+
+						//if there is already an edge like this
+						if (a.fromNodeID===akt.fromNodeID && a.toNodeID===akt.toNodeID) {
+							alert("This edge already exists!");
+							isValidEdge = false;
+						}
+
+						//if there is already an edge reversed
+						if (a.fromNodeID===akt.toNodeID && a.toNodeID===akt.fromNodeID) {
+							alert("You cannot make an edge referring to the same node as from.");
+							isValidEdge = false;
+						}
+					}
+					if(isValidEdge===true) edges.push(a);
+				}
 			}
+		redraw();
 		}
-		redraw();}
 	}
 	
 	//creates nodes on shift+click
@@ -215,18 +281,57 @@ window.onload = function() {
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y){
+	constructor(ID, txt, x, y, status){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
 		this.y = y;
+		// 0 : not yet started
+		// 1 : in progress
+		// 2 : done
+		if (status==null){
+			this.status = 0;
+		} else {
+			this.status = status;
+		}
+
 		this.toString = function(){
 			return "text: "+this.txt+" x: "+this.x+" y: "+y;
 		}
 	}
+
+	getColor(){
+		var color; 
+		switch(this.status) {
+			case 0:
+				color = "#ff3333";
+				break;
+			case 1:
+				color = "lightblue";
+				break;
+			case 2:
+				color = "#33cc33";
+		}
+		return color;
+	}
+
+	getStatus(){
+		var text; 
+		switch(this.status) {
+			case 0:
+				text = "Not yet started";
+				break;
+			case 1:
+				text = "In progress";
+				break;
+			case 2:
+				text = "Done";
+		}
+		return text;
+	}
 }
 
-//seperates the tex into words for readability
+//seperates the text into words for readability
 function insertText(gEl, title) {
 	//returns if no valid title passed
 	if(title==null){
