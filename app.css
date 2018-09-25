@@ -20,3 +20,7 @@ text:hover{
 .hover circle {
 	fill: white;
 }
+
+#hidden-file-upload {
+	display: none;
+}
