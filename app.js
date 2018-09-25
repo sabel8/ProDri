@@ -166,6 +166,46 @@ window.onload = function() {
 		d3.selectAll("#new").remove();
 	}
 
+	//drag start, (creates if necessary and)
+	//draws a temporary edge
+	function dragstarted(d) {
+		if (shiftKeyPressed===true) {
+			fromNode=d;
+			if (document.getElementById('new')===null)
+			d3.select("#graph").append("path")
+				.attr("id","new")
+				.attr("stroke","black")
+				.attr("stroke-width",edgeWidth)
+				.attr("marker-end","url(#arrowheadTemp)");
+		}
+	}
+	
+	//dragging, redraws the temporary edge
+	//calculates
+	function dragged(d){
+		if (shiftKeyPressed===true) {
+			let e = d3.event;
+			let mouseX = e.x+mousePos[0];
+			let mouseY = e.y+mousePos[1];
+			let diffX=e.x-d.x;
+			let diffY=e.y-d.y;
+			let moveEdgeX=(mouseX-d.x)*diffFromCursor;
+			let moveEdgeY=(mouseY-d.y)*diffFromCursor;
+			d3.select("#new")
+				.attr("d","M"+d.x+","+d.y+"l"+moveEdgeX+","+moveEdgeY);
+		} else {
+			var draggedNode = nodes[d.ID];
+			draggedNode.x += d3.event.dx;
+			draggedNode.y += d3.event.dy;
+			redraw();
+		}
+	}
+	
+	//drag end
+	function dragend(d) {
+		createEdge();
+		shiftKeyPressed=false;
+	}
 
 	//this function triggers nodes
 	//according to their status
@@ -187,40 +227,6 @@ window.onload = function() {
 				}
 			}
 		}
-	}
-
-	//drag start, (creates if necessary and)
-	//draws a temporary edge
-	function dragstarted(d) {
-		if (shiftKeyPressed===true) {
-			fromNode=d;
-			if (document.getElementById('new')===null)
-			d3.select("#graph").append("path")
-				.attr("id","new")
-				.attr("stroke","black")
-				.attr("stroke-width",edgeWidth)
-				.attr("marker-end","url(#arrowheadTemp)");
-		}
-	}
-	
-	//dragging, redraws the temporary edge
-	//calculates
-	function dragged(d){
-		let e = d3.event;
-		let mouseX = e.x+mousePos[0];
-		let mouseY = e.y+mousePos[1];
-		let diffX=e.x-d.x;
-		let diffY=e.y-d.y;
-		let moveEdgeX=(mouseX-d.x)*diffFromCursor;
-		let moveEdgeY=(mouseY-d.y)*diffFromCursor;
-		d3.select("#new")
-			.attr("d","M"+d.x+","+d.y+"l"+moveEdgeX+","+moveEdgeY);
-	}
-	
-	//drag end
-	function dragend(d) {
-		createEdge();
-		shiftKeyPressed=false;
 	}
 
 	//creates a new edge and pushes it to the array
