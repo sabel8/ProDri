@@ -17,10 +17,31 @@ text:hover{
 	text-decoration: underline;
 }
 
+/*for nodes*/
 .hover circle {
 	fill: white;
 }
 
+/*for edges*/
+.hoverEdge {
+	cursor: pointer;
+	fill:yellow;
+	stroke: yellow;
+}
+.selectedEdge {
+	cursor: pointer;
+	fill: blue;
+	stroke: blue;
+}
+
 #hidden-file-upload {
 	display: none;
+}
+
+#statusSelect {
+	display: none;
+}
+
+label {
+	font-weight: normal;
 }

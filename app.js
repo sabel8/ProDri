@@ -1,117 +1,3 @@
-//NODE CLASS
-//constructor of the Node element
-class Node {
-	constructor(ID, txt, x, y, status){
-		this.ID = ID;
-		this.txt = txt;
-		this.x = x;
-		this.y = y;
-		this.output = 0;
-		this.input = 0;
-		// 0 : not yet started
-		// 1 : in progress
-		// 2 : done
-		if (status==null){
-			this.status = 0;
-		} else {
-			this.status = status;
-		}
-
-		this.toString = function(){
-			return "text: "+this.txt+" x: "+this.x+" y: "+y
-			+" status: "+this.status+" output: "
-			+this.output+" input: "+this.input;
-		}
-	}
-
-	getColor(){
-		let color; 
-		switch(this.status) {
-			case 0:
-			color = "#ff3333";
-			break;
-			case 1:
-			color = "lightblue";
-			break;
-			case 2:
-			color = "#33cc33";
-		}
-		return color;
-	}
-
-	getStatus(){
-		let text; 
-		switch(this.status) {
-			case 0:
-			text = "Not yet started";
-			break;
-			case 1:
-			text = "In progress";
-			break;
-			case 2:
-			text = "Done";
-		}
-		return text;
-	}
-}
-
-//seperates the text into words for readability
-function insertText(gEl, title) {
-	//returns if no valid title passed
-	if(title==null){
-		return;
-	}
-
-	//count the words
-	var words = title.split(/\s+/g),
-	nwords = words.length;
-
-	//initialize the text element
-	var el = gEl.append("text")
-	.attr("text-anchor","middle")
-	.attr("dy", "-" + (nwords-1)*7.5);
-
-	//add span elements to the text
-	for (var i = 0; i < words.length; i++) {
-		var tspan = el.append('tspan').text(words[i]);
-		if (i > 0)
-			tspan.attr('x', 0).attr('dy', '15');
-	}
-};
-
-//iterate through the edges and if
-//all predecessors are done then
-//sets the INPUT of the node to 1
-function checkForInput(nodeID) {
-	var allPreviousDone = true;
-	for (var i=0;i<edges.length;i++) {
-		var aktEdge = edges[i];
-		if (aktEdge.toNodeID === nodeID) {
-			if (nodes[aktEdge.fromNodeID].status != 2) {
-				allPreviousDone=false;
-			}
-		} 
-	}
-	if (allPreviousDone === true) {
-		nodes[nodeID].input = 1;
-	}
-}
-
-//EDGE CLASS
-class Edge {
-	constructor(ID,fromNodeID,toNodeID) {
-		this.ID = ID;
-		this.fromNodeID = fromNodeID;
-		this.toNodeID = toNodeID;
-		this.toString = function(){
-			return "ID: "+this.ID+"; fromNodeID: "+this.fromNodeID
-			+"; toNodeID: "+toNodeID+";";
-		}
-	}
-
-}
-
-
 //defining the arrays which holds the data
 //of the nodes and the edges
 var nodes = new Array(),
@@ -119,10 +5,10 @@ edges = new Array();
 
 //SAPMLE VALUES FOR REPRESENTATION
 //AND TESTING PURPOSES
-nodes.push(new Node(0,"példa 0",300,200,0));
-nodes.push(new Node(1,"példa 1",100,300,2));
-nodes.push(new Node(2,"példa 2",500,200,0));
-nodes.push(new Node(3,"példa 3",400,350,0));
+nodes.push(new Node(0,"példa 0",300,200,0,"artist","John Jonas",5,"r"));
+nodes.push(new Node(1,"példa 1",100,300,2,"artist","John Jonas",5,"r"));
+nodes.push(new Node(2,"példa 2",600,100,0,"artist","John Jonas",5,"r"));
+nodes.push(new Node(3,"példa 3",500,350,0,"artist","John Jonas",3,"r"));
 edges.push(new Edge(0,1,0));
 edges.push(new Edge(1,0,2));
 edges.push(new Edge(2,1,3));
@@ -141,12 +27,32 @@ var toNode, fromNode, mousePos, shiftKeyPressed=false;
 //speaks for themselves...
 var diffFromCursor = 0.98,
 circleRadius = 40,
-edgeWidth = 3;
+edgeWidth = 3,
+selectedNodeColor = "gold",
+rectRoundness = 20,
+rectWidth = 150,
+rectHeight = 75;
+
+//variable for deleting edge and node
+var selectedEdge, selectedNode;
+
+//defines the authority
+//this disables most functions
+var authority,authRadios;
+
+
 
 //the whole functionality starts after the page has loaded
 window.onload = function() {
 
-	
+	//gets the authority radio buttons
+	authRadios = document.querySelectorAll('input[type=radio][name="authority"]');
+
+	//changes authority if it's radio changes
+	Array.prototype.forEach.call(authRadios, function(radio) {
+		radio.addEventListener('change', function () {authority = this.value;});
+	});
+
 
 	//testing :D
 	d3.select("body").append("h1").text("Üdv!");
@@ -163,6 +69,13 @@ window.onload = function() {
 	d3.select("body").append("button")
 	.attr("onclick","uploadButton()")
 	.text("Upload");
+	d3.select("body").append("button")
+	.attr("onclick","deleteSelected()")
+	.text("Delete");
+	d3.select("body").append("button")
+	.attr("onclick","calc()")
+	.text("Critical path");
+
 	d3.select("body").append("br");
 
 	//adding the main svg element to the Body
@@ -170,7 +83,23 @@ window.onload = function() {
 	var svg = d3.select("body").append("svg")
 	.attr("width", width)
 	.attr("height", height)
-	.on("click", createNode)
+	.on("click", function() {
+		mousePos = d3.mouse(d3.select("#graph").node());
+		if (shiftKeyPressed===true) {
+			if (authority==="u") {
+				alert("Unfortunately, you cannot make new nodes...");
+			} else {
+				//opening the query modal
+				d3.select("#newNodeModalTrigger").node().click();
+			}		
+		}
+		shiftKeyPressed=false;	
+	})
+	.on("mousedown", function(d){
+		if (d3.event.shiftKey) {
+			shiftKeyPressed = true;
+		}
+	})
 	.on("mouseup", function(){shiftKeyPressed = false})
 	.call(d3.zoom()
 		    //.scaleExtent([1, 8]) //this modifies the maximum rate of the zoom
@@ -178,14 +107,38 @@ window.onload = function() {
 
     //defining the arrow which later will serve
     //as the marker-end for the edge-pathes
+
+    //default marker
     svg.append("defs").append("marker")
     .attr("id","arrowhead")
     .attr("viewBox","0 0 10 10")
-    .attr("refX",circleRadius-10).attr("refY",5)
+    .attr("refX",8)
+    .attr("refY",5)
     .attr("markerWidth",6).attr("markerHeight",6)
     .attr("orient","auto")
     .append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
 
+    //hovering edge marker
+    svg.append("defs").append("marker")
+    .attr("id","arrowheadHover")
+    .attr("viewBox","0 0 10 10")
+    .attr("refX",8).attr("refY",5)
+    .attr("markerWidth",6).attr("markerHeight",6)
+    .attr("orient","auto")
+    .attr("fill","yellow")
+    .append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
+
+    //selected edge marker
+    svg.append("defs").append("marker")
+    .attr("id","arrowheadSelected")
+    .attr("viewBox","0 0 10 10")
+    .attr("refX",8).attr("refY",5)
+    .attr("markerWidth",6).attr("markerHeight",6)
+    .attr("orient","auto")
+    .attr("fill","blue")
+    .append("path").attr("d","M 0 0 L 10 5 L 0 10 z");
+
+    //temporarly edge marker
     svg.append("defs").append("marker")
     .attr("id","arrowheadTemp")
     .attr("viewBox","0 0 10 10")
@@ -204,22 +157,15 @@ window.onload = function() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
 	redraw();
-
-	//sets the output and input values
-	//for the predefined data
-	for (var i=0;i<nodes.length;i++) {
-		var aktNode = nodes[i];
-		checkForInput(aktNode.ID);
-		if (aktNode.status == 2) {
-			aktNode.output = 1;
-		}
-	}
+	reviseInAndOutputs();
+	d3.select("svg").node().focus();
+	
 };//end of window.onload
-
 
 //drag start, (creates if necessary and)
 //draws a temporary edge
 function dragstarted(d) {
+	//console.log("dragging started")
 	if (shiftKeyPressed===true) {
 		fromNode=d;
 		if (document.getElementById('new')===null)
@@ -245,7 +191,7 @@ function dragged(d){
 		d3.select("#new")
 		.attr("d","M"+d.x+","+d.y+"l"+moveEdgeX+","+moveEdgeY);
 	} else {
-		var draggedNode = nodes[d.ID];
+		var draggedNode = getNodeByID(d.ID);
 		draggedNode.x += d3.event.dx;
 		draggedNode.y += d3.event.dy;
 		redraw();
@@ -256,16 +202,6 @@ function dragged(d){
 function dragend(d) {
 	createEdge();
 	shiftKeyPressed=false;
-}
-
-//this function triggers nodes
-//according to their status
-//this is only for dynamic graph usage
-function verifyStatus() {
-	for (var i = 0;i<nodes.length;i++) {
-		var aktNode = nodes[i];
-		checkForInput(aktNode.ID);
-	}
 }
 
 //creates a new edge and pushes it to the array
@@ -280,7 +216,7 @@ function createEdge() {
 			//if the user drags the line to the same node
 			//it aborts the creation process of the edge
 			if (toNode.ID!=fromNode.ID){
-				var a = new Edge(edges.length,fromNode.ID,toNode.ID);
+				var a = new Edge(getValidID(edges),fromNode.ID,toNode.ID);
 
 				let isValidEdge = true;
 
@@ -304,23 +240,13 @@ function createEdge() {
 				//meets all the requirements
 				if(isValidEdge===true) {
 					edges.push(a);
-					checkForInput(a.toNodeID);
+					//checkForInput(a.toNodeID);
+					reviseInAndOutputs();
 				}
 			}
 		}
 		redraw();
 	}
-}
-
-//creates nodes on shift+click
-function createNode(){
-	if (d3.event.shiftKey) {
-		let event = d3.mouse(d3.select("#graph").node());
-		let txt = prompt("Please enter the title of the task", "Példa egy");
-		if (txt===null){return;}
-		nodes.push(new Node(nodes.length,txt,event[0],event[1]));
-	}
-	redraw();
 }
 
 //this function is called if there is any 
@@ -333,20 +259,65 @@ function redraw(){
 	d3.select("#graph").selectAll("g").remove();
 
 	//iterating through the edge array and creating
-	//the corresponding SVG PATH elements
+	//the corresponding SVG PATH elements (=arrows)
 	for(let i=0;i<edges.length;i++){
 		d3.select("#graph").append("path")
 		.attr("id","edge")
-		.attr("d",function() {
+		.attr("d",getPath(edges[i])/*function() {
 			let currentEdge = edges[i];
-			let from = nodes[currentEdge.fromNodeID];
-			let to = nodes[currentEdge.toNodeID];
+			let from = getNodeByID(currentEdge.fromNodeID);
+			let to = getNodeByID(currentEdge.toNodeID);
 			let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
-			return dir;
+			return dir;}*/)
+		.attr("stroke",function(){
+			if (selectedEdge===edges[i])
+				return "blue";
+			else
+				return "black";
 		})
-		.attr("stroke","black")
 		.attr("stroke-width",edgeWidth)
-		.attr("marker-end","url(#arrowhead)");
+		.attr("marker-end",function(){
+			if (selectedEdge===edges[i])
+				return "url(#arrowheadSelected)";
+			else
+				return "url(#arrowhead)";
+		})
+		.on("mouseenter", function(){
+			d3.select(this).classed("hoverEdge",true)
+				.classed("selectedEdge",false)
+				.attr("marker-end","url(#arrowheadHover)")
+		})
+		.on("mouseleave", function(){
+			let d = edges[i];
+			if (selectedEdge===d) {
+				d3.select(this).classed("selectedEdge",true)
+					.attr("marker-end","url(#arrowheadSelected)");
+			} else {
+			d3.select(this).classed("hoverEdge",false)
+				.attr("marker-end","url(#arrowhead)")
+			}
+		})
+		//sets the selectedEdge variable and shows
+		//info modal if not selected
+		.on("click",function(){
+			let d = edges[i]
+			if (selectedEdge===d) {
+				d3.select(this).classed("hoverEdge",false)
+					.attr("marker-end","url(#arrowhead)");
+				selectedEdge=null;
+			} else {
+				d3.select(this).classed("selectedEdge",true)
+					.attr("marker-end","url(#arrowheadSelected)");
+				selectedNode = null;
+				selectedEdge = d;
+				//display the edge info modal on click
+				d3.select("#objectName").text("Edge");
+				let infoSplitted = d.toString().replace(new RegExp("; ", 'g'), "<br>");
+				d3.select("#objectInfo").html(infoSplitted)
+				d3.select("#objectInfoModalTrigger").node().click();
+			}
+			redraw();
+		});
 	}
 
 	//drawing nodes with d3 from the array
@@ -366,6 +337,7 @@ function redraw(){
 	.on("click",function(d,i){
 			//changing status on ctrl+click
 			if (d3.event.ctrlKey) {
+				selectedNode=null;
 				var aktNode = nodes[i];
 				if(aktNode.input === 0){
 					alert("Cannot change this node's status.");
@@ -377,21 +349,49 @@ function redraw(){
 						aktNode.output = 1;
 					}
 				}
-				verifyStatus();
+				redraw();
+				reviseInAndOutputs();
 			}
 			//simple click alerts info about the node
-			else
-				alert("Here will be the info of the node/task."
-					+"\nThis node has the text \""+d.txt+"\" on it."
-					+"\nIts ID is "+d.ID+"."
-					+"\nIts status is "+d.getStatus()
-					+"\n"+d);
+			else {
+				if (selectedNode!=d) {
+					selectedEdge=null;
+					selectedNode=d;
+					d3.select("#nodeNum"+d.ID).attr("fill","gold");
+					d3.select("#objectName").text("Node: "+d.txt);
+					let infoSplitted = d.toString().replace(new RegExp("; ", 'g'), "<br>");
+					d3.select("#objectInfo").html(infoSplitted);
+					d3.select("#objectInfoModalTrigger").node().click();
+					d3.select("#statusSelect").style("display","block");
+					let statSelect = d3.select("#statusSelect").node();
+					switch(d.status) {
+						case 0:
+							statSelect.value = "notStartedOption";
+							break;
+						case 1:
+							statSelect.value = "inProgressOption";
+							break;
+						case 2:
+							statSelect.value = "doneOption";
+							break;
+					}
 
-		})
+				} else {
+					d3.select("#nodeNum"+d.ID).attr("fill",function (d) {
+						return d.getColor();
+					})
+					selectedNode=null;					
+				}
+				redraw();
+				}
+			})
 		//reverts to original color
-		.on("mouseleave", function(){
+		.on("mouseleave", function(d){
 			toNode = null;
 			d3.select(this).attr("class",null);
+			if (selectedNode===d) {
+				d3.select("#nodeNum"+d.ID).attr("fill",selectedNodeColor);
+			}
 		})
 		//checks if shift is pressed (for dragging)
 		.on("mousedown", function(d){
@@ -406,90 +406,48 @@ function redraw(){
 			.on("drag", dragged)
 			.on("end", dragend));
 
+	//data-toggle="modal" data-target="#myModal"
+
 	//adding nodes from array
-	g.append("circle")
-	.attr("r", circleRadius)
-	.attr("fill",function(d,i){let a = new Node(d);return d.getColor()})
+	g.append("rect")
+	.attr("id",function(d){return "nodeNum"+d.ID})
+	.attr("x", rectWidth/-2)
+	.attr("y", rectHeight/-2)
+	.attr("width", rectWidth)
+	.attr("height", rectHeight)
+	.attr("rx", rectRoundness)
+	.attr("ry", rectRoundness)
+	.attr("fill",function(d,i){
+		if (selectedNode===d)
+			return selectedNodeColor;
+		else
+			return d.getColor()
+	})
 	.attr("stroke","black");
 
 
 	//adds the corresponding label to each node
 	g.each(function(d) {
-		insertText(d3.select(this), d.txt)
+		insertText(d3.select(this), d.ID, d.txt)
 	});
 
 	//removes the dragged uncomplete edge
 	d3.selectAll("#new").remove();
 }
 
-//creates JSON file
-function downloadButton() {
-	var str = [window.JSON.stringify({"nodes" :nodes, "edges" :edges})];
-	download("myGraph.json",str);
-}
+//called when the query has been submitted
+function getNodeData() {
+	//x and y values are in mousePos variable
+	let x = mousePos[0];
+	let y = mousePos[1];
+	let taskName = d3.select("#nodeTitle").node().value;
+	let knowledgeArea = d3.select("#nodeKnowledgeArea").node().value;
+	let responsiblePerson = d3.select("#nodeResponsiblePerson").node().value;
+	let duration = d3.select("#nodeDuration").node().value;
+	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
+	//getting description... TODO
 
-
-//helper function for downloading
-function download(filename, text) {
-	var element = document.createElement('a');
-	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-	element.setAttribute('download', filename);
-	element.style.display = 'none';
-	document.body.appendChild(element);
-	element.click();
-	document.body.removeChild(element);
-}
-
-
-function uploadButton() {
-	//clicks the invisible upload input button
-	//then fires the upload(event) function
-	document.getElementById("hidden-file-upload").click();
-}
-
-
-//helper function for uploading
-function upload(event) {
-	if (File && FileReader && FileList) {
-		var uploadFile = event.target.files[0];
-
-		var filereader = new FileReader();
-		filereader.onload = function(){
-
-        	//backup data if parsing is unsuccessful
-        	let backupNodes = nodes
-        	backupEdges = edges;
-
-        	try {
-				//getting data from the file
-				//and pushing it to the arrays
-				var jsonObj = JSON.parse(filereader.result);
-				var nodeArr = jsonObj.nodes;
-				edges = new Array();
-				nodes = new Array();
-				for(var i=0;i<nodeArr.length;i++) {
-					let d = nodeArr[i];
-					let a = new Node(d.ID,d.txt,d.x,d.y,d.status);
-					nodes.push(a);
-				}
-				var edgeArr = jsonObj.edges;
-				for(var i=0;i<edgeArr.length;i++) {
-					let d = edgeArr[i];
-					let a = new Edge(d.ID,d.fromNodeID,d.toNodeID);
-					edges.push(a);
-				}
-				redraw();
-			} catch (err) {
-				window.alert("Error parsing uploaded file\n" + err.message);
-				edges = backupEdges;
-				nodes = backupNodes;
-				return;
-			}
-		};
-		filereader.readAsText(uploadFile);
-
-	} else {
-		alert("Your browser won't let you save this graph -- try upgrading your browser to IE 10+ or Chrome or Firefox.");
-	}
-	redraw();
+	//VALIDATION MISSING
+	return new Node(getValidID(nodes),taskName,x,y,0,knowledgeArea,responsiblePerson,Number(duration),raci);
+	//VALIDATION MISSING
 }
