@@ -22,15 +22,25 @@ function calcPathDur(startID,endID,visited,localPathList) {
 
 //helper function for critical path calculation
 function calc() {
+	var startingNodeID, finishNodeID;
 
-	var startingNodeID = d3.select("#startNodeID").node().value;
-	var finishNodeID = d3.select("#finishNodeID").node().value;
+	if (d3.select("#IDMode").node().checked === true) {
+		startingNodeID = d3.select("#startNodeID").node().value;
+		finishNodeID = d3.select("#finishNodeID").node().value;
 
-	if (getNodeByID(startingNodeID)==null || getNodeByID(finishNodeID)==null) {
-		alert("The selected start or finish node does not exist.");
-		return;
-	} else if(startingNodeID==finishNodeID) {
-		alert("The starting node cannot be the end node too.");
+		if (getNodeByID(startingNodeID)==null || getNodeByID(finishNodeID)==null) {
+			alert("The selected start or finish node does not exist.");
+			return;
+		} else if(startingNodeID==finishNodeID) {
+			alert("The starting node cannot be the end node too.");
+		}
+	} else {
+		startingNodeID = getStartNodeID();
+		finishNodeID = getFinishNodeID();
+		if (startingNodeID===-1 || finishNodeID===-1) {
+			alert("There is no START or FINISH node!");
+			return;
+		}
 	}
 
 	pathes=new Array();
@@ -61,7 +71,22 @@ function calc() {
 		if (pathes[maxDurIndex]==null || maxDuration==null) {
 			alert("There is not any route between the start and the end node.")
 		} else {
-			alert("The critical path: "+pathes[maxDurIndex]+" (ID of the nodes)"+
+			var critPath = pathes[maxDurIndex];
+
+			//changing the start and finish node ID
+			//to its names
+			if (critPath.substr(0,1)==getStartNodeID()) {
+				critPath = critPath.replace(getStartNodeID(),"START");
+			}
+			if (critPath.substr(-1)==getFinishNodeID()) {
+				critPath = critPath.replace(getFinishNodeID(),"FINISH");
+			}
+
+			//replacing the commas to arrows
+			critPath = critPath.replace(/,/g," -> ");
+
+			alert("The critical path: (ID of the nodes)"+
+				"\n"+critPath+
 				"\nIt's duration is : "+maxDuration);
 		}
 	}
@@ -114,26 +139,26 @@ function selectStatus() {
 	var curNode = getNodeByID(selectedNode.ID);
 	switch(chosen) {
 		case "notStartedOption":
-			curNode.status = 0;
-			break;
+		curNode.status = 0;
+		break;
 		case "inProgressOption":
-			if (curNode.input==1) {
-				curNode.status = 1;
-			} else {
-				alert("You cannot change this node's status "+
-					"because not all predecessors are done.");
-				d3.select("#statusSelect").node().value = "notStartedOption";
-			}
-			break;
+		if (curNode.input==1) {
+			curNode.status = 1;
+		} else {
+			alert("You cannot change this node's status "+
+				"because not all predecessors are done.");
+			d3.select("#statusSelect").node().value = "notStartedOption";
+		}
+		break;
 		case "doneOption":
-			if (curNode.input==1) {
-				curNode.status = 2;
-			} else {
-				alert("You cannot change this node's status "+
-					"because not all predecessors are done.")
-				d3.select("#statusSelect").node().value = "notStartedOption";
-			}
-			break;
+		if (curNode.input==1) {
+			curNode.status = 2;
+		} else {
+			alert("You cannot change this node's status "+
+				"because not all predecessors are done.")
+			d3.select("#statusSelect").node().value = "notStartedOption";
+		}
+		break;
 	}
 	reviseInAndOutputs();
 	let infoSplitted = curNode.toString().replace(new RegExp("; ", 'g'), "<br>");
@@ -155,19 +180,24 @@ function reviseInAndOutputs() {
 	//sets the output and input values
 	//for the predefined data
 	for (var i=0;i<nodes.length;i++) {
-		var aktNode = nodes[i];
+		var curNode = nodes[i];
 		//sets input
-		checkForInput(aktNode.ID);
+		checkForInput(curNode.ID);
 		//if input is 0
 		//then status changes to 0
-		if(aktNode.input===0) {
-			aktNode.status = 0;
+		if(curNode.input===0) {
+			curNode.status = 0;
+		}
+		//automatically changes FINISH
+		//node status
+		if(curNode.txt==="FINISH" && curNode.input===1) {
+			curNode.status=2;
 		}
 		//sets output
-		if (aktNode.status == 2) {
-			aktNode.output = 1;
+		if (curNode.status == 2) {
+			curNode.output = 1;
 		} else {
-			aktNode.output = 0;
+			curNode.output = 0;
 		}
 	}
 }
@@ -178,9 +208,9 @@ function reviseInAndOutputs() {
 function checkForInput(nodeID) {
 	var allPreviousDone = true;
 	for (var i=0;i<edges.length;i++) {
-		var aktEdge = edges[i];
-		if (aktEdge.toNodeID === nodeID) {
-			if (getNodeByID(aktEdge.fromNodeID).status != 2) {
+		var curEdge = edges[i];
+		if (curEdge.toNodeID === nodeID) {
+			if (getNodeByID(curEdge.fromNodeID).status != 2) {
 				allPreviousDone=false;
 				break;
 			}
@@ -190,5 +220,69 @@ function checkForInput(nodeID) {
 		getNodeByID(nodeID).input = 1;
 	} else {
 		getNodeByID(nodeID).input = 0;
+	}
+}
+
+//called on node creation
+//when the query has been submitted
+function getNodeData() {
+	//x and y values are in mousePos variable
+	let x = mousePos[0];
+	let y = mousePos[1];
+	let taskName = d3.select("#nodeTitle").node().value;
+	let knowledgeArea = d3.select("#nodeKnowledgeArea").node().value;
+	let responsiblePerson = d3.select("#nodeResponsiblePerson").node().value;
+	let duration = d3.select("#nodeDuration").node().value;
+	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
+	//getting description... TODO
+
+	//VALIDATION MISSING
+	return new Node(getValidID(nodes),taskName,x,y,0,knowledgeArea,responsiblePerson,Number(duration),raci,curProcess);
+	//VALIDATION MISSING
+}
+
+
+//creates a new edge and pushes it to the array
+//if it passes validation
+function createEdge() {
+	if(shiftKeyPressed===true){
+
+		//if mouse is released without
+		//hovering over any edge
+		if (toNode!=null) {
+
+			//if the user drags the line to the same node
+			//it aborts the creation process of the edge
+			if (toNode.ID!=fromNode.ID){
+				var a = new Edge(getValidID(edges),fromNode.ID,toNode.ID);
+
+				let isValidEdge = true;
+
+				//iterating through the edge array
+				//for validating the edge
+				for (var i = 0;i<edges.length;i++) {
+					let cur = edges[i];
+
+					//if there is already an edge like this
+					if (a.fromNodeID===cur.fromNodeID && a.toNodeID===cur.toNodeID) {
+						alert("This edge already exists!");
+						isValidEdge = false;
+					}
+
+					//if there is already an edge reversed
+					if (a.fromNodeID===cur.toNodeID && a.toNodeID===cur.fromNodeID) {
+						alert("You cannot make an edge referring to the same node as from.");
+						isValidEdge = false;
+					}
+				}
+				//meets all the requirements
+				if(isValidEdge===true) {
+					edges.push(a);
+					//checkForInput(a.toNodeID);
+					reviseInAndOutputs();
+				}
+			}
+		}
+		redraw();
 	}
 }

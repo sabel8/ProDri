@@ -1,3 +1,5 @@
+var curProcess="Sample Project";
+
 //defining the arrays which holds the data
 //of the nodes and the edges
 var nodes = new Array(),
@@ -5,14 +7,18 @@ edges = new Array();
 
 //SAPMLE VALUES FOR REPRESENTATION
 //AND TESTING PURPOSES
-nodes.push(new Node(0,"példa 0",300,200,0,"artist","John Jonas",5,"r"));
-nodes.push(new Node(1,"példa 1",100,300,2,"artist","John Jonas",5,"r"));
-nodes.push(new Node(2,"példa 2",600,100,0,"artist","John Jonas",5,"r"));
-nodes.push(new Node(3,"példa 3",500,350,0,"artist","John Jonas",3,"r"));
+nodes.push(new Node(0,"példa 0",300,200,1,"artist","John Jonas",5,"r",curProcess));
+nodes.push(new Node(1,"példa 1",100,300,2,"artist","John Jonas",5,"r",curProcess));
+nodes.push(new Node(2,"példa 2",600,100,0,"artist","John Jonas",5,"r",curProcess));
+nodes.push(new Node(3,"példa 3",500,350,0,"artist","John Jonas",3,"r",curProcess));
+nodes.push(new Node(4,"START",100,100,null,null,null,null,null,curProcess));
+nodes.push(new Node(5,"FINISH",850,300,null,null,null,null,null,curProcess));
 edges.push(new Edge(0,1,0));
 edges.push(new Edge(1,0,2));
 edges.push(new Edge(2,1,3));
 edges.push(new Edge(3,3,2));
+edges.push(new Edge(4,4,1));
+edges.push(new Edge(5,2,5));
 
 //dimensions for the main svg element
 var width = window.innerWidth*0.8,
@@ -52,10 +58,6 @@ window.onload = function() {
 	Array.prototype.forEach.call(authRadios, function(radio) {
 		radio.addEventListener('change', function () {authority = this.value;});
 	});
-
-
-	//testing :D
-	d3.select("body").append("h1").text("Üdv!");
 
 	d3.select("body").append("input")
 	.attr("type","submit")
@@ -204,50 +206,6 @@ function dragend(d) {
 	shiftKeyPressed=false;
 }
 
-//creates a new edge and pushes it to the array
-//if it passes validation
-function createEdge() {
-	if(shiftKeyPressed===true){
-
-		//if mouse is released without
-		//hovering over any edge
-		if (toNode!=null) {
-
-			//if the user drags the line to the same node
-			//it aborts the creation process of the edge
-			if (toNode.ID!=fromNode.ID){
-				var a = new Edge(getValidID(edges),fromNode.ID,toNode.ID);
-
-				let isValidEdge = true;
-
-				//iterating through the edge array
-				//for validating the edge
-				for (var i = 0;i<edges.length;i++) {
-					let akt = edges[i];
-
-					//if there is already an edge like this
-					if (a.fromNodeID===akt.fromNodeID && a.toNodeID===akt.toNodeID) {
-						alert("This edge already exists!");
-						isValidEdge = false;
-					}
-
-					//if there is already an edge reversed
-					if (a.fromNodeID===akt.toNodeID && a.toNodeID===akt.fromNodeID) {
-						alert("You cannot make an edge referring to the same node as from.");
-						isValidEdge = false;
-					}
-				}
-				//meets all the requirements
-				if(isValidEdge===true) {
-					edges.push(a);
-					//checkForInput(a.toNodeID);
-					reviseInAndOutputs();
-				}
-			}
-		}
-		redraw();
-	}
-}
 
 //this function is called if there is any 
 //DATA RELATED interaction on the svg
@@ -338,19 +296,19 @@ function redraw(){
 			//changing status on ctrl+click
 			if (d3.event.ctrlKey) {
 				selectedNode=null;
-				var aktNode = nodes[i];
-				if(aktNode.input === 0){
+				var curNode = nodes[i];
+				if(curNode.input === 0){
 					alert("Cannot change this node's status.");
 					return;
 				}
-				if (aktNode.status!=2) {
-					aktNode.status++;
-					if (aktNode.status == 2) {
-						aktNode.output = 1;
+				if (curNode.status!=2) {
+					curNode.status++;
+					if (curNode.status == 2) {
+						curNode.output = 1;
 					}
 				}
-				redraw();
 				reviseInAndOutputs();
+				redraw();
 			}
 			//simple click alerts info about the node
 			else {
@@ -359,10 +317,12 @@ function redraw(){
 					selectedNode=d;
 					d3.select("#nodeNum"+d.ID).attr("fill","gold");
 					d3.select("#objectName").text("Node: "+d.txt);
-					let infoSplitted = d.toString().replace(new RegExp("; ", 'g'), "<br>");
+					let infoSplitted = d.getData().replace(new RegExp("; ", 'g'), "<br>");
 					d3.select("#objectInfo").html(infoSplitted);
 					d3.select("#objectInfoModalTrigger").node().click();
-					d3.select("#statusSelect").style("display","block");
+					if (d.txt!="START"&&d.txt!="FINISH") {
+						d3.select("#statusSelect").style("display","block");
+					}
 					let statSelect = d3.select("#statusSelect").node();
 					switch(d.status) {
 						case 0:
@@ -433,21 +393,4 @@ function redraw(){
 
 	//removes the dragged uncomplete edge
 	d3.selectAll("#new").remove();
-}
-
-//called when the query has been submitted
-function getNodeData() {
-	//x and y values are in mousePos variable
-	let x = mousePos[0];
-	let y = mousePos[1];
-	let taskName = d3.select("#nodeTitle").node().value;
-	let knowledgeArea = d3.select("#nodeKnowledgeArea").node().value;
-	let responsiblePerson = d3.select("#nodeResponsiblePerson").node().value;
-	let duration = d3.select("#nodeDuration").node().value;
-	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
-	//getting description... TODO
-
-	//VALIDATION MISSING
-	return new Node(getValidID(nodes),taskName,x,y,0,knowledgeArea,responsiblePerson,Number(duration),raci);
-	//VALIDATION MISSING
 }

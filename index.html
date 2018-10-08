@@ -39,10 +39,20 @@
 	<p>shift+húzás a noderól --> új edge létrehozása</p>
 	<p>katt a node-on        --> infó róla</p>
 	<p>Shift+katt a vásznon  --> új node létrehozása</p>
+	<hr>
 	<p>
 		ID of starting node: <input type="number" id="startNodeID" value="1"><br>
 		ID of finishing node: <input type="number" id="finishNodeID" value="2">
 	</p>
+	<div id="pathCalculationModes">
+		<p>Mode of critical path calculation:<br>
+			<input id="IDMode" type="radio" name="pathCalculationMode">
+			<label for="IDMode">Use the ID's above</label>
+			<input id="startEndMode" type="radio" name="pathCalculationMode" checked>
+			<label for="startEndMode">Use START --> END nodes</label>
+		</p>
+	</div>
+	<hr>
 	<div id="authorities">
 		<p>Authority (beta):
 			<input id="processOwnerAuth" type="radio" name="authority" value="po" checked>
@@ -73,7 +83,7 @@
 				</div>
 				<div class="modal-footer">
 					<button style="float:left;" type="button" class="btn btn-danger" data-dismiss="modal"  onclick="deleteSelected()">Delete</button>
-					<button style="float:right;" type="button" class="btn btn-default" data-dismiss="modal" onclick='d3.select("#statusSelect").style("display","none");'>Close</button>
+					<button style="float:right;" type="button" class="btn btn-default" data-dismiss="modal" onclick='d3.select("#statusSelect").style("display","none");selectedNode=null;redraw();'>Close</button>
 				</div>
 			</div>
 

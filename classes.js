@@ -1,31 +1,49 @@
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI){
+	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processName){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
 		this.y = y;
-		this.knowledgeArea = knowledgeArea;
-		this.responsiblePerson = responsiblePerson;
-		this.duration = duration;
-		this.RACI = RACI;
-		this.output = 0;
-		this.input = 0;
-		// 0 : not yet started
-		// 1 : in progress
-		// 2 : done
-		if (status==null){
+		this.processName=processName;
+		if (txt==="START"){
+			this.status = 2;
+			this.duration=0;
+		} else if (txt==="FINISH"){
 			this.status = 0;
+			this.duration=0;
 		} else {
-			this.status = status;
+			this.knowledgeArea = knowledgeArea;
+			this.responsiblePerson = responsiblePerson;
+			this.duration = duration;
+			this.RACI = RACI;
+			this.output = 0;
+			this.input = 0;
+			// 0 : not yet started
+			// 1 : in progress
+			// 2 : done
+			if (status==null){
+				this.status = 0;
+			} else {
+				this.status = status;
+			}
 		}
 
 		this.toString = function(){
 			return "ID: "+this.ID+"; text: "+this.txt+"; x: "+this.x+"; y: "+y
 			+"; status: "+this.status+"; output: "+this.output+"; input: "
 			+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
-			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI;
+			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
+			+"; Process Name: "+processName;
+		}
+
+		this.getData = function() {
+			return "ID: "+this.ID+"; text: "+this.txt+"; status: "
+			+this.status+"; output: "+this.output+"; input: "
+			+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
+			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
+			+"; Process Name: "+processName;
 		}
 	}
 
@@ -71,11 +89,15 @@ function insertText(gEl, id, title) {
 	var el = gEl.append("text")
 	.attr("text-anchor","middle")
 	.attr("dy", "-7.5");
-
-	el.append("tspan").html("ID: ").style("font-weight","bold");
-	el.append("tspan").text(id);
-	el.append("tspan").html("Name: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
-	el.append("tspan").text(title);
+	if (title!="START" && title!="FINISH") {
+		el.append("tspan").html("ID: ").style("font-weight","bold");
+		el.append("tspan").text(id);
+		el.append("tspan").html("Name: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
+		el.append("tspan").text(title);
+	} else {
+		el.append("tspan").html(title).style("font-weight","bold").attr('x', 0).attr('dy', '5');
+	}
+	
 };
 
 function getNodeByID(nodeID) {
@@ -85,6 +107,24 @@ function getNodeByID(nodeID) {
 		}
 	}
 	return null;
+}
+
+function getStartNodeID() {
+	for (var i = 0;i<nodes.length;i++) {
+		if (nodes[i].txt==="START") {
+			return nodes[i].ID;
+		}
+	}
+	return -1;
+}
+
+function getFinishNodeID() {
+	for (var i = 0;i<nodes.length;i++) {
+		if (nodes[i].txt==="FINISH") {
+			return nodes[i].ID;
+		}
+	}
+	return -1;
 }
 
 //EDGE CLASS
@@ -132,26 +172,26 @@ function getValidID(array) {
 }
 
 function getPath(d){
-    var from = getNodeByID(d.fromNodeID);
-    var to = getNodeByID(d.toNodeID);
-    var recW = rectWidth;
-    var recH = rectHeight;
-    var recR = rectRoundness;
+	var from = getNodeByID(d.fromNodeID);
+	var to = getNodeByID(d.toNodeID);
+	var recW = rectWidth;
+	var recH = rectHeight;
+	var recR = rectRoundness;
 
     //case 1
     if (from.x-recW < to.x && to.x < from.x+recW && from.y > to.y){
-        return "M"+from.x+","+(from.y-(recH/2))+
-        "L"+to.x+","+(to.y+(recH/2));
+    	return "M"+from.x+","+(from.y-(recH/2))+
+    	"L"+to.x+","+(to.y+(recH/2));
     }
     //case 2
     else if (to.x<=from.x-recW && to.y<=from.y-recH) {
-        return "M"+(from.x-(recW/2)+recR)+","+(from.y-(recH/2)+recR)+
-        "L"+(to.x+(recW/2)-(recR*0.2))+","+(to.y+(recH/2)-(recR*0.2));
+    	return "M"+(from.x-(recW/2)+recR)+","+(from.y-(recH/2)+recR)+
+    	"L"+(to.x+(recW/2)-(recR*0.2))+","+(to.y+(recH/2)-(recR*0.2));
     }
     //case 3
     else if(to.x<from.x && (from.y-recH < to.y) && (to.y < from.y+recH)) {
     	return "M"+(from.x-(recW/2))+","+from.y+
-    		"L"+(to.x+(recW/2))+","+to.y;
+    	"L"+(to.x+(recW/2))+","+to.y;
     }
     //case 4
     else if(to.x<=from.x-recW && from.y+recH<=to.y) {
@@ -161,22 +201,22 @@ function getPath(d){
     //case 5
     else if (from.x-recW<to.x && to.x<from.x+recW && to.y>from.y) {
     	return "M"+from.x+","+(from.y+(recH/2))+
-    		"L"+to.x+","+(to.y-(recH/2));
+    	"L"+to.x+","+(to.y-(recH/2));
     }
     //case 6
     else if (from.x+recW<=to.x && from.y+recH<=to.y) {
     	return "M"+(from.x+(recW/2)-recR)+","+(from.y+(recH/2)-recR)+
-    		"L"+(to.x-(recW/2)+(recR*0.2))+","+(to.y-(recH/2)+(recR*0.2));
+    	"L"+(to.x-(recW/2)+(recR*0.2))+","+(to.y-(recH/2)+(recR*0.2));
     }
     //case 7
     else if (from.x<to.x && from.y-recH<to.y && to.y<from.y+recH) {
     	return "M"+(from.x+(recW/2))+","+from.y+
-    		"L"+(to.x-(recW/2))+","+to.y;
+    	"L"+(to.x-(recW/2))+","+to.y;
     }
     //case 8
     else if (from.x+recW<=to.x && from.y-recH>=to.y) {
     	return "M"+(from.x+(recW/2)-recR)+","+(from.y-(recH/2)+recR)+
-    		"L"+(to.x-(recW/2)+(recR*0.2))+","+(to.y+(recH/2)-(recR*0.2));
+    	"L"+(to.x-(recW/2)+(recR*0.2))+","+(to.y+(recH/2)-(recR*0.2));
     } else {
     	alert("error");
     }
