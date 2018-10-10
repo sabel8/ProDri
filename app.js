@@ -1,25 +1,3 @@
-var curProcess="Sample Project";
-
-//defining the arrays which holds the data
-//of the nodes and the edges
-var nodes = new Array(),
-edges = new Array();
-
-//SAPMLE VALUES FOR REPRESENTATION
-//AND TESTING PURPOSES
-nodes.push(new Node(0,"példa 0",300,200,1,"artist","John Jonas",5,"r",curProcess));
-nodes.push(new Node(1,"példa 1",100,300,2,"artist","John Jonas",5,"r",curProcess));
-nodes.push(new Node(2,"példa 2",600,100,0,"artist","John Jonas",5,"r",curProcess));
-nodes.push(new Node(3,"példa 3",500,350,0,"artist","John Jonas",3,"r",curProcess));
-nodes.push(new Node(4,"START",100,100,null,null,null,null,null,curProcess));
-nodes.push(new Node(5,"FINISH",850,300,null,null,null,null,null,curProcess));
-edges.push(new Edge(0,1,0));
-edges.push(new Edge(1,0,2));
-edges.push(new Edge(2,1,3));
-edges.push(new Edge(3,3,2));
-edges.push(new Edge(4,4,1));
-edges.push(new Edge(5,2,5));
-
 //dimensions for the main svg element
 var width = window.innerWidth*0.8,
 height = 500;
@@ -51,6 +29,7 @@ var authority,authRadios;
 //the whole functionality starts after the page has loaded
 window.onload = function() {
 
+
 	//gets the authority radio buttons
 	authRadios = document.querySelectorAll('input[type=radio][name="authority"]');
 
@@ -59,30 +38,34 @@ window.onload = function() {
 		radio.addEventListener('change', function () {authority = this.value;});
 	});
 
-	d3.select("body").append("input")
+	var main = document.createElement("div");
+	main.setAttribute("ID","mainDiv");
+	d3.select("body").node().insertBefore(main,d3.select("#footer").node());
+
+	d3.select("#mainDiv").append("input")
 	.attr("type","submit")
 	.attr("onclick","downloadButton()")
 	.attr("value","Download");
-	d3.select("body").append("input")
+	d3.select("#mainDiv").append("input")
 	.attr("type","file")
 	.attr("accept",".json")
 	.attr("onchange","upload(event)")
 	.attr("id","hidden-file-upload");
-	d3.select("body").append("button")
+	d3.select("#mainDiv").append("button")
 	.attr("onclick","uploadButton()")
 	.text("Upload");
-	d3.select("body").append("button")
+	d3.select("#mainDiv").append("button")
 	.attr("onclick","deleteSelected()")
 	.text("Delete");
-	d3.select("body").append("button")
+	d3.select("#mainDiv").append("button")
 	.attr("onclick","calc()")
 	.text("Critical path");
 
-	d3.select("body").append("br");
+	d3.select("#mainDiv").append("br");
 
-	//adding the main svg element to the Body
+	//adding the main svg element to the #mainDiv
 	//zoom functionality linked here to zoom function
-	var svg = d3.select("body").append("svg")
+	var svg = d3.select("#mainDiv").append("svg")
 	.attr("width", width)
 	.attr("height", height)
 	.on("click", function() {
@@ -158,10 +141,9 @@ window.onload = function() {
 	function zoom() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
-	redraw();
 	reviseInAndOutputs();
 	d3.select("svg").node().focus();
-	
+	redraw();
 };//end of window.onload
 
 //drag start, (creates if necessary and)
@@ -221,12 +203,9 @@ function redraw(){
 	for(let i=0;i<edges.length;i++){
 		d3.select("#graph").append("path")
 		.attr("id","edge")
-		.attr("d",getPath(edges[i])/*function() {
-			let currentEdge = edges[i];
-			let from = getNodeByID(currentEdge.fromNodeID);
-			let to = getNodeByID(currentEdge.toNodeID);
-			let dir = "M"+from.x+","+from.y+"L"+to.x+","+to.y;
-			return dir;}*/)
+		.attr("d",function(){
+			return getPath(edges[i])
+		})
 		.attr("stroke",function(){
 			if (selectedEdge===edges[i])
 				return "blue";
@@ -242,16 +221,16 @@ function redraw(){
 		})
 		.on("mouseenter", function(){
 			d3.select(this).classed("hoverEdge",true)
-				.classed("selectedEdge",false)
-				.attr("marker-end","url(#arrowheadHover)")
+			.classed("selectedEdge",false)
+			.attr("marker-end","url(#arrowheadHover)")
 		})
 		.on("mouseleave", function(){
 			let d = edges[i];
 			if (selectedEdge===d) {
 				d3.select(this).classed("selectedEdge",true)
-					.attr("marker-end","url(#arrowheadSelected)");
+				.attr("marker-end","url(#arrowheadSelected)");
 			} else {
-			d3.select(this).classed("hoverEdge",false)
+				d3.select(this).classed("hoverEdge",false)
 				.attr("marker-end","url(#arrowhead)")
 			}
 		})
@@ -261,11 +240,11 @@ function redraw(){
 			let d = edges[i]
 			if (selectedEdge===d) {
 				d3.select(this).classed("hoverEdge",false)
-					.attr("marker-end","url(#arrowhead)");
+				.attr("marker-end","url(#arrowhead)");
 				selectedEdge=null;
 			} else {
 				d3.select(this).classed("selectedEdge",true)
-					.attr("marker-end","url(#arrowheadSelected)");
+				.attr("marker-end","url(#arrowheadSelected)");
 				selectedNode = null;
 				selectedEdge = d;
 				//display the edge info modal on click
@@ -280,7 +259,7 @@ function redraw(){
 
 	//drawing nodes with d3 from the array
 	//in a separate g element which
-	//hold the node's label too
+	//holds the node's label too
 	var g = d3.select("#graph").selectAll("g")
 	.data(nodes)
 	.enter()
@@ -326,14 +305,14 @@ function redraw(){
 					let statSelect = d3.select("#statusSelect").node();
 					switch(d.status) {
 						case 0:
-							statSelect.value = "notStartedOption";
-							break;
+						statSelect.value = "notStartedOption";
+						break;
 						case 1:
-							statSelect.value = "inProgressOption";
-							break;
+						statSelect.value = "inProgressOption";
+						break;
 						case 2:
-							statSelect.value = "doneOption";
-							break;
+						statSelect.value = "doneOption";
+						break;
 					}
 
 				} else {
@@ -343,8 +322,8 @@ function redraw(){
 					selectedNode=null;					
 				}
 				redraw();
-				}
-			})
+			}
+		})
 		//reverts to original color
 		.on("mouseleave", function(d){
 			toNode = null;
@@ -366,31 +345,28 @@ function redraw(){
 			.on("drag", dragged)
 			.on("end", dragend));
 
-	//data-toggle="modal" data-target="#myModal"
+		//data-toggle="modal" data-target="#myModal"
 
-	//adding nodes from array
-	g.append("rect")
-	.attr("id",function(d){return "nodeNum"+d.ID})
-	.attr("x", rectWidth/-2)
-	.attr("y", rectHeight/-2)
-	.attr("width", rectWidth)
-	.attr("height", rectHeight)
-	.attr("rx", rectRoundness)
-	.attr("ry", rectRoundness)
-	.attr("fill",function(d,i){
-		if (selectedNode===d)
-			return selectedNodeColor;
-		else
-			return d.getColor()
-	})
-	.attr("stroke","black");
+		//adding nodes from array
+		g.append("rect")
+		.attr("id",function(d){return "nodeNum"+d.ID})
+		.attr("x", rectWidth/-2)
+		.attr("y", rectHeight/-2)
+		.attr("width", rectWidth)
+		.attr("height", rectHeight)
+		.attr("rx", rectRoundness)
+		.attr("ry", rectRoundness)
+		.attr("fill",function(d){
+			if (selectedNode===d)
+				return selectedNodeColor;
+			else
+				return d.getColor()
+		})
+		.attr("stroke","black");
 
-
-	//adds the corresponding label to each node
-	g.each(function(d) {
-		insertText(d3.select(this), d.ID, d.txt)
-	});
-
+		g.each(function(d){
+			insertText(d3.select(this),d.ID,d.txt);
+		});
 	//removes the dragged uncomplete edge
-	d3.selectAll("#new").remove();
+	d3.selectAll("#new").remove();		
 }

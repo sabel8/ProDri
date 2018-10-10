@@ -1,40 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<title>Graphs</title>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<!-- Latest compiled and minified CSS -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<?php
+require_once("config.php");
+include(TEMPLATE.DS."header.php");
+?>
 
-	<!-- jQuery library -->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="app.js" type="text/javascript"></script>
 
-	<!-- Latest compiled JavaScript -->
-	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-	<!-- D3 library -->
-	<script src="https://d3js.org/d3.v5.min.js"></script>
-
-	<!-- Own js libraries -->
-	<script src="classes.js"></script>
-	<script src="graphFunctions.js"></script>
-	<script src="externalDataFunctions.js"></script>
-
-	<!-- Own css stylesheet -->	
-	<link rel="stylesheet" href="app.css">
-</head>
-<body id="body">
-
-	<nav class="navbar navbar-default">
-		<div class="container-fluid">
-			<div class="navbar-header">
-				<span class="navbar-brand">Graphs</span>
-			</div>
-		</div>
-	</nav>
-
-	<script src="app.js" type="text/javascript"></script>
+<div class="container">
 	<p>CTRL+katt a node-on   --> állapot változtatás</p>
 	<p>shift+húzás a noderól --> új edge létrehozása</p>
 	<p>katt a node-on        --> infó róla</p>
@@ -136,7 +107,5 @@
 
 		</div>
 	</div>
-
-
-</body>
-</html>
+</div>
+<?php include(TEMPLATE.DS."footer.php")?>

@@ -1,4 +1,5 @@
 var pathes=new Array();
+
 function calcPathDur(startID,endID,visited,localPathList) {
 	visited[startID] = true;
 
