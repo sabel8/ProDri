@@ -5,7 +5,7 @@ include(TEMPLATE.DS."header.php");
 
 <script src="app.js" type="text/javascript"></script>
 
-<div class="container">
+<div class="container" id="body">
 	<p>CTRL+katt a node-on   --> állapot változtatás</p>
 	<p>shift+húzás a noderól --> új edge létrehozása</p>
 	<p>katt a node-on        --> infó róla</p>
@@ -18,7 +18,7 @@ include(TEMPLATE.DS."header.php");
 	<div id="pathCalculationModes">
 		<p>Mode of critical path calculation:<br>
 			<input id="IDMode" type="radio" name="pathCalculationMode">
-			<label for="IDMode">Use the ID's above</label>
+			<label for="IDMode">Use the ID's above</label><br>
 			<input id="startEndMode" type="radio" name="pathCalculationMode" checked>
 			<label for="startEndMode">Use START --> END nodes</label>
 		</p>
@@ -107,5 +107,5 @@ include(TEMPLATE.DS."header.php");
 
 		</div>
 	</div>
-</div>
+	
 <?php include(TEMPLATE.DS."footer.php")?>

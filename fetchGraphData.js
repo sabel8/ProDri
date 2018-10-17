@@ -30,12 +30,16 @@ function setNodes(array) {
 		//current node data
 		var c = array[i].split("|");
 		if (c[1]=="START") {
-			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),2,null,null,null,null,c[9]));
+			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),2,null,null,null,null,c[9],c[10]));
 		} else if (c[1]=="FINISH") {
-			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),0,null,null,null,null,c[9]));
+			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),0,null,null,null,null,c[9],c[10]));
 		} else {
-			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),Number(c[4]),c[5],c[6],Number(c[7]),c[8],c[9]));
+			nodes.push(new Node(i,c[1],Number(c[2]),Number(c[3]),Number(c[4]),c[5],c[6],Number(c[7]),c[8],c[9],c[10]));
 		}
+	}
+	//redraw if graph should be shown
+	if(window.location.pathname=="/graphs/" || window.location.pathname=="/graphs/index.php") {
+		redraw();
 	}
 }
 function setEdges(array) {

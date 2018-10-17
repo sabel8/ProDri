@@ -134,35 +134,37 @@ function deleteSelected() {
 	}
 }
 
-
+//called if node status is changed
+//in the modal
 function selectStatus() {
 	var chosen = d3.select("#statusSelect").node().value;
 	var curNode = getNodeByID(selectedNode.ID);
+	
+	//checks if status can be changed then sets it
 	switch(chosen) {
 		case "notStartedOption":
-		curNode.status = 0;
-		break;
+			curNode.status = 0;
+			break;
 		case "inProgressOption":
-		if (curNode.input==1) {
-			curNode.status = 1;
-		} else {
-			alert("You cannot change this node's status "+
-				"because not all predecessors are done.");
-			d3.select("#statusSelect").node().value = "notStartedOption";
-		}
-		break;
-		case "doneOption":
-		if (curNode.input==1) {
-			curNode.status = 2;
-		} else {
-			alert("You cannot change this node's status "+
-				"because not all predecessors are done.")
-			d3.select("#statusSelect").node().value = "notStartedOption";
-		}
-		break;
+			if (curNode.input == 1){
+				curNode.status = 1;
+			} else {
+				alert("You cannot change this node's status "+
+					"because not all predecessors are done.")
+				d3.select("#statusSelect").node().value = "notStartedOption";
+			}
+			break;
+		default:
+			if (curNode.input == 1) {
+				curNode.status = 2;
+			} else {
+				alert("You cannot change this node's status "+
+					"because not all predecessors are done.")
+				d3.select("#statusSelect").node().value = "notStartedOption";
+			}
 	}
 	reviseInAndOutputs();
-	let infoSplitted = curNode.toString().replace(new RegExp("; ", 'g'), "<br>");
+	let infoSplitted = curNode.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
 	d3.select("#objectInfo").html(infoSplitted);
 	redraw();
 }

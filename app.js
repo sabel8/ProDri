@@ -1,6 +1,5 @@
-//dimensions for the main svg element
-var width = window.innerWidth*0.8,
-height = 500;
+//name of the process
+var curProcess = "Sample Project";
 
 //defining variables for edge drawing
 //mousePos: start of dragging in coordinates
@@ -40,7 +39,7 @@ window.onload = function() {
 
 	var main = document.createElement("div");
 	main.setAttribute("ID","mainDiv");
-	d3.select("body").node().insertBefore(main,d3.select("#footer").node());
+	d3.select("#body").node().insertBefore(main,d3.select("#footer").node());
 
 	d3.select("#mainDiv").append("input")
 	.attr("type","submit")
@@ -62,6 +61,11 @@ window.onload = function() {
 	.text("Critical path");
 
 	d3.select("#mainDiv").append("br");
+
+	
+	//dimensions for the main svg element
+	var width = d3.select("#body").node().offsetWidth-40,
+	height = 400;
 
 	//adding the main svg element to the #mainDiv
 	//zoom functionality linked here to zoom function
@@ -291,17 +295,24 @@ function redraw(){
 			}
 			//simple click alerts info about the node
 			else {
+				//only shows if not selected yet
 				if (selectedNode!=d) {
 					selectedEdge=null;
 					selectedNode=d;
 					d3.select("#nodeNum"+d.ID).attr("fill","gold");
+
+					//setting up the modal with the text
 					d3.select("#objectName").text("Node: "+d.txt);
-					let infoSplitted = d.getData().replace(new RegExp("; ", 'g'), "<br>");
+					let infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
 					d3.select("#objectInfo").html(infoSplitted);
 					d3.select("#objectInfoModalTrigger").node().click();
-					if (d.txt!="START"&&d.txt!="FINISH") {
+
+					//disable status changing on start and finish nodes
+					if (d.txt!="START" && d.txt!="FINISH") {
 						d3.select("#statusSelect").style("display","block");
 					}
+
+					//setting the current status to the dropdown
 					let statSelect = d3.select("#statusSelect").node();
 					switch(d.status) {
 						case 0:
@@ -315,6 +326,7 @@ function redraw(){
 						break;
 					}
 
+				//if selected, deselect it
 				} else {
 					d3.select("#nodeNum"+d.ID).attr("fill",function (d) {
 						return d.getColor();

@@ -5,6 +5,7 @@ function getTasks() {
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			taskArray = this.responseText.split(";");
+			//console.log(this.responseText)
 			createTasksTable(taskArray);
 		}
 	};
@@ -13,8 +14,15 @@ function getTasks() {
 }
 
 function createTasksTable(array) {
+	//if nothing is returned
+	//inform the user
+	if(array.length-1==0) {
+		d3.select("#tasksTable").node().innerHTML = "<h3>This person either doesn't exist or doesn't have any task.</h3>";
+		return;
+	}
 	var tableHtml = "<table class='table table-hover'>";
-	tableHtml+="<tr><th>ID</th><th>Name</th><th>Status</th><th>Duration</th><th>RACI</th><th>Project name</th></tr>";
+	tableHtml+="<tr><th>ID</th><th>Name</th><th>Status</th><th>Duration</th>"
+	+"<th>RACI</th><th>Process name</th><th>Project name</th></tr>";
 
 	//append the task with their input values
 	for (var i=0;i<array.length-1;i++) {
@@ -44,7 +52,7 @@ function createTasksTable(array) {
 				switch (Number(c[n])){
 					case 0:
 						if (c[c.length-1]==1){
-							tableHtml += "<td>Not started</td>";
+							tableHtml += "<td>Not started yet</td>";
 						} else {
 							tableHtml += "<td>Can't be started</td>";
 						}

@@ -1,12 +1,13 @@
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processName){
+	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processName, projectName){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
 		this.y = y;
-		this.processName=processName;
+		this.processName = processName;
+		this.projectName = projectName;
 		if (txt==="START"){
 			this.status = 2;
 			this.duration=0;
@@ -35,15 +36,26 @@ class Node {
 			+"; status: "+this.status+"; output: "+this.output+"; input: "
 			+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
 			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
-			+"; Process Name: "+processName;
+			+"; Process Name: "+processName+"; Project Name: "+projectName;
 		}
 
-		this.getData = function() {
-			return "ID: "+this.ID+"; text: "+this.txt+"; status: "
-			+this.status+"; output: "+this.output+"; input: "
-			+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
-			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
-			+"; Process Name: "+processName;
+		this.getRelevantData = function() {
+
+			if (this.txt==="START") {
+				return "ID: "+this.ID+"; text: "+this.txt
+				+"; Process Name: "+processName+"; Project Name: "+projectName;
+
+			} else if (this.txt==="FINISH") {
+				return "ID: "+this.ID+"; text: "+this.txt+"; status: "
+				+this.status+"; Process Name: "+processName+"; Project Name: "+projectName;
+
+			} else {
+				return "ID: "+this.ID+"; text: "+this.txt+"; status: "
+				+this.status+"; output: "+this.output+"; input: "
+				+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
+				+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
+				+"; Process Name: "+processName+"; Project Name: "+projectName;
+			}
 		}
 	}
 

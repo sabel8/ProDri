@@ -17,7 +17,7 @@ include(TEMPLATE.DS."header.php");
       </div>
     </div>
   </form>
-  <div id="tasksTable"></div>
+  <div id="tasksTable" class="table-responsive"></div>
 </div>
 
 
