@@ -33,6 +33,24 @@ if ($q=="insert") {
 			$query = $connection->prepare("INSERT INTO deliverable_types (ID, deliverableTypeName) VALUES (NULL,?)");
 			$query->bind_param('s',$p[1]);
 			break;
+		case "nodes":
+			$query=$connection->prepare("INSERT INTO nodes (ID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,processID)
+				VALUES (?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE ID=?,txt=?,xCord=?,yCord=?,status=?,professionID=?,responsiblePersonID=?,duration=?,RACI=?,processID=?");
+			$query->bind_param("isiiiiiisiisiiiiiisi",$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10],$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10]);
+			break;
+		case "edges":
+			$query = $connection->prepare("INSERT INTO edges (ID,fromNodeID,toNodeID) VALUES (?,?,?) ON DUPLICATE KEY UPDATE ID=?,fromNodeID=?,toNodeID=?");
+			$query->bind_param("iiiiii",$p[1],$p[2],$p[3],$p[1],$p[2],$p[3]);
+			break;
+		case "edgeDel":
+			$query=$connection->prepare("DELETE FROM edges WHERE ID=?");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "nodeDel":
+			$query=$connection->prepare("DELETE FROM nodes WHERE ID=?");
+			$query->bind_param("i",$p[1]);
+			break;
+
 	}
 	confirm($query);
 	if ($query->execute()) {

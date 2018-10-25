@@ -35,8 +35,10 @@
 			pathname += pathname=="/prodri/" ? "index.php":"";
 			$('.nav > li > a[href="'+pathname+'"]').parent().addClass('active');
 		});
-		getNodesAndEdges();
-		reviseInAndOutputs();
+		window.onload = function() {
+			getNodesAndEdges();
+			reviseInAndOutputs();
+		}
 	</script>
 
 	<!-- Own css stylesheet -->	

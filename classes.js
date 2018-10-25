@@ -32,29 +32,48 @@ class Node {
 		}
 
 		this.toString = function(){
-			return "ID: "+this.ID+"; text: "+this.txt+"; x: "+this.x+"; y: "+y
-			+"; status: "+this.status+"; output: "+this.output+"; input: "
-			+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
-			+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
-			+"; Process Name: "+processName+"; Project Name: "+projectName;
+			return "ID: "+this.ID
+			+"; text: "+this.txt
+			+"; x: "+this.x
+			+"; y: "+y
+			+"; status: "+this.status
+			+"; output: "+this.output
+			+"; input: "
+			+this.input+"; knowledgeArea: "+getProfessionFromID(this.knowledgeArea)
+			+"; res.person: "+getPersonFromID(this.responsiblePerson)
+			+"; duration: "+this.duration
+			+"; RACI: "+this.RACI
+			+"; Process Name: "+getProcessNameFromID(this.processName)
+			+"; Project Name: "+getProjectNameFromID(this.processName);
 		}
 
 		this.getRelevantData = function() {
 
 			if (this.txt==="START") {
-				return "ID: "+this.ID+"; text: "+this.txt
-				+"; Process Name: "+processName+"; Project Name: "+projectName;
+				return "ID: "+this.ID
+				+"; text: "+this.txt
+				+"; Process Name: "+getProcessNameFromID(this.processName)
+				+"; Project Name: "+getProjectNameFromID(this.processName);
 
 			} else if (this.txt==="FINISH") {
-				return "ID: "+this.ID+"; text: "+this.txt+"; status: "
-				+this.status+"; Process Name: "+processName+"; Project Name: "+projectName;
+				return "ID: "+this.ID
+				+"; text: "+this.txt
+				+"; status: "+this.status
+				+"; Process Name: "+getProcessNameFromID(this.processName)
+				+"; Project Name: "+getProjectNameFromID(this.processName);
 
 			} else {
-				return "ID: "+this.ID+"; text: "+this.txt+"; status: "
-				+this.status+"; output: "+this.output+"; input: "
-				+this.input+"; knowledgeArea: "+this.knowledgeArea+"; res.person: "
-				+this.responsiblePerson+"; duration: "+this.duration+"; RACI: "+this.RACI
-				+"; Process Name: "+processName+"; Project Name: "+projectName;
+				return "ID: "+this.ID
+				+"; text: "+this.txt
+				+"; status: "+this.status
+				+"; output: "+this.output
+				+"; input: "+this.input
+				+"; knowledgeArea: "+getProfessionFromID(this.knowledgeArea)
+				+"; res.person: "+getPersonFromID(this.responsiblePerson)
+				+"; duration: "+this.duration
+				+"; RACI: "+this.RACI
+				+"; Process Name: "+getProcessNameFromID(this.processName)
+				+"; Project Name: "+getProjectNameFromID(this.processName);
 			}
 		}
 	}
@@ -121,6 +140,59 @@ function getNodeByID(nodeID) {
 	return null;
 }
 
+function getProfessionFromID(ID) {
+	var result="";
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			let res = this.responseText.split(",");
+			result = res[0]+" ("+res[1]+")";
+		}
+	};
+	xmlhttp.open("GET", "getdatas.php?q=getprofession&n="+ID, false);
+	xmlhttp.send();
+	return result;
+}
+
+function getPersonFromID(ID) {
+	var result="";
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			result = this.responseText;
+		}
+	};
+	xmlhttp.open("GET", "getdatas.php?q=getperson&n="+ID, false);
+	xmlhttp.send();
+	return result;
+}
+
+function getProcessNameFromID(ID) {
+	var result="";
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			result = this.responseText;
+		}
+	};
+	xmlhttp.open("GET", "getdatas.php?q=getprocess&n="+ID, false);
+	xmlhttp.send();
+	return result;
+}
+
+function getProjectNameFromID(ID) {
+	var result="";
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			result = this.responseText;
+		}
+	};
+	xmlhttp.open("GET", "getdatas.php?q=getproject&n="+ID, false);
+	xmlhttp.send();
+	return result;
+}
+
 function getStartNodeID() {
 	for (var i = 0;i<nodes.length;i++) {
 		if (nodes[i].txt==="START") {
@@ -168,7 +240,7 @@ function getPosInArray(objectID,array) {
 //index: possible ID
 //array: the array of the other elements
 function getValidID(array) {
-	for (var index = 0;index<10000;index++) {
+	for (var index = 1;;index++) {
 		var wrongID = false;
 		for (var i = 0;i<array.length;i++) {
 			if (array[i].ID===index) {

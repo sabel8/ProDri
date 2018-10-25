@@ -94,15 +94,17 @@ function calc() {
 }
 
 function deleteSelected() {
-	//hiding the status selector
-	d3.select("#statusSelect").style("display","block");
+	//hiding the status selector of the modal
+	d3.select("#statusSelect").style("display","none");
 	if (selectedEdge==null && selectedNode==null) {
 		alert("Nothing is selected.");
 	}
 	//DELETE EDGE
 	else if (selectedEdge!=null) {
-		let response = confirm("Do you really want to delete the selected edge?");
+		let response = confirm("Do you really want to delete the selected edge?"
+			+" This action cannot be undone.");
 		if (response === true) {
+			console.log(runInsert(["edgeDel",selectedEdge.ID]));
 			deleteEdge(selectedEdge);
 			selectedEdge=null;
 			redraw();
@@ -112,19 +114,22 @@ function deleteSelected() {
 	//DELETE NODE
 	else if (selectedNode!=null) {
 		let response = confirm("Do you really want to delete the selected"
-			+"\nnode and all the edges connected to it?");
+			+"\nnode and all the edges connected to it?"
+			+" This action cannot be undone.");
 		if (response === true) {
 			//deleting all edges related to the node
 			for (var i = 0;i<edges.length;i++) {
 				var curEdge=edges[i];
 				//if it derives from or points at the node
 				if (curEdge.toNodeID===selectedNode.ID || curEdge.fromNodeID===selectedNode.ID) {
+					console.log(runInsert(["edgeDel",curEdge.ID]));
 					deleteEdge(curEdge);
 					//deletion makes length decreased by one
 					i--;
 				}
 			}
 			//deleting the node itself
+			console.log(runInsert(["nodeDel",selectedNode.ID]));
 			let pos = getPosInArray(selectedNode.ID,nodes);
 			nodes.splice(pos,1);
 			selectedNode=null;
@@ -233,14 +238,19 @@ function getNodeData() {
 	let x = mousePos[0];
 	let y = mousePos[1];
 	let taskName = d3.select("#nodeTitle").node().value;
-	let knowledgeArea = d3.select("#nodeKnowledgeArea").node().value;
-	let responsiblePerson = d3.select("#nodeResponsiblePerson").node().value;
+
+	var selectEl = d3.select("#professionSelect").node();
+	let profession = selectEl.options[selectEl.selectedIndex].value;
+
+	selectEl = d3.select("#personSelect").node();
+	let resPerson = selectEl.options[selectEl.selectedIndex].value;
+
 	let duration = d3.select("#nodeDuration").node().value;
 	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
 	//getting description... TODO
 
 	//VALIDATION MISSING
-	return new Node(getValidID(nodes),taskName,x,y,0,knowledgeArea,responsiblePerson,Number(duration),raci,curProcess);
+	return new Node(getValidID(nodes),taskName,x,y,0,profession,resPerson,Number(duration),raci,curProcessID.toString());
 	//VALIDATION MISSING
 }
 

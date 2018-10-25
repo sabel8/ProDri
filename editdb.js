@@ -71,7 +71,8 @@ function createEditTable(array) {
 			}
 			//setting up the edit and remove buttons
 			tableHtml += '<td><a onclick="modifyRecord();"><span class="glyphicon glyphicon-edit"></span></a>'
-				+' <a onclick="deleteRecord(\''+activeLi+'\','+columns[0]+');"><span class="glyphicon glyphicon-remove"></span></a></td>';
+				+' <a onclick="deleteRecord(\''+activeLi+'\','+columns[0]+');">'
+				+'<span class="glyphicon glyphicon-remove"></span></a></td>';
 		}
 
 		tableHtml += "</tr>";
@@ -83,6 +84,7 @@ function createEditTable(array) {
 
 /** MODAL FUNCTIONS **/
 
+//wtf?
 function setupModal(activeLi,array) {
 	setModalTitle(activeLi);
 
@@ -259,6 +261,9 @@ function createRecord() {
 	tableSetup(activeLi);
 }
 
+
+//params[0] = 'table name'
+//rest is the inserted values
 function runInsert(params) {
 	var response;
 	var xmlhttp = new XMLHttpRequest();

@@ -10,6 +10,7 @@ include(TEMPLATE.DS."header.php");
 	<p>shift+húzás a noderól --> új edge létrehozása</p>
 	<p>katt a node-on        --> infó róla</p>
 	<p>Shift+katt a vásznon  --> új node létrehozása</p>
+	<p>Ha változtatást jóvá akarod hagyni akkor a submit graph gombra nyomj! (kivéve törlés esetében)</p>
 	<hr>
 	<p>
 		ID of starting node: <input type="number" id="startNodeID" value="1"><br>
@@ -34,7 +35,7 @@ include(TEMPLATE.DS."header.php");
 	</div>
 
 	<a id="objectInfoModalTrigger" style="display: none" data-toggle="modal" href="#objectInfoModal"></a>
-	<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal"></a>
+	<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="setupModal()"></a>
 
 	<!-- Obejct Info Modal -->
 	<div id="objectInfoModal" class="modal fade" role="dialog">
@@ -74,12 +75,15 @@ include(TEMPLATE.DS."header.php");
 						Task name:<br>
 						<input type="text" id="nodeTitle" value="Example task 1">
 						<br><br>
-						Knowledge area: (beta)<br>
-						<input type="text" id="nodeKnowledgeArea" value="lawyer">
-						<br><br>
-						Responsible person: (beta)<br>
-						<input type="text" id="nodeResponsiblePerson" value="Soma Kiss">
-						<br><br>
+
+						Profession:<br>
+						<select id="professionSelect" onchange="professionChange()">
+						</select><br><br>
+
+						Responsible person:<br>
+						<select id="personSelect">
+						</select><br><br>
+
 						Duration:<br>
 						<input type="number" id="nodeDuration" value="7">
 						<br><br>

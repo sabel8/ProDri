@@ -4,25 +4,12 @@ require_once("config.php");
 $q = $_REQUEST["q"];
 $res = "";
 if ($q=="nodes") {
-	$query = query("
-		SELECT n.ID, n.txt, n.xCord, n.yCord, n.status, professionName, personName, n.duration, n.RACI, p.processName, projectName
-	 	FROM nodes AS n
-	 	LEFT JOIN professions AS prof
-	 		ON n.professionID=prof.ID
-		LEFT JOIN persons AS pers
-			ON n.responsiblePersonID=pers.ID
-		LEFT JOIN processes AS p
-			ON n.processNameID=p.ID
-		LEFT JOIN projects
-			ON p.projectID=projects.ID
-		");
+	$query = query("SELECT * FROM nodes");
 	confirm($query);
 	while ($row = fetch_array($query)){
 		$res = $res . implode("|",$row) .";\n";
 	}
 	echo $res;
-
-
 
 
 } else if ($q=="edges") {
@@ -45,7 +32,7 @@ if ($q=="nodes") {
 		LEFT JOIN persons AS rp
 			ON n.responsiblePersonID=rp.ID 
 		LEFT JOIN processes AS p
-			ON n.processNameID=p.ID
+			ON n.processID=p.ID
 		LEFT JOIN projects
 			ON p.projectID=projects.ID
 		WHERE rp.personName=?
@@ -120,6 +107,74 @@ if ($q=="nodes") {
 		$res = $res . implode(",",$row) .";";
 	}
 	echo $res;
-}
 
+
+} else if ($q=="getpersons") {
+	$p=$_REQUEST["p"];
+
+	//getting the table records
+	$query = $connection->prepare("SELECT ID, personName FROM persons WHERE professionID=?");
+	$query->bind_param('i',$p);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	while ($row = $result->fetch_assoc()){
+		$res = $res . implode(",",$row) .";";
+	}
+	echo $res;
+
+
+} else if ($q=="getprofession") {
+	$p=$_REQUEST["n"];
+	$query = $connection->prepare("SELECT professionName,seniority FROM professions WHERE ID=?");
+	$query->bind_param('i',$p);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	while ($row = $result->fetch_assoc()){
+		$res = $res . implode(",",$row);
+	}
+	echo $res;
+
+
+
+} else if ($q=="getperson") {
+	$p=$_REQUEST["n"];
+	$query = $connection->prepare("SELECT personName FROM persons WHERE ID=?");
+	$query->bind_param('i',$p);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	while ($row = $result->fetch_assoc()){
+		$res = $res . implode(",",$row);
+	}
+	echo $res;
+
+
+} else if ($q=="getprocess") {
+	$p=$_REQUEST["n"];
+	$query = $connection->prepare("SELECT processName FROM processes WHERE ID=?");
+	$query->bind_param('i',$p);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	while ($row = $result->fetch_assoc()){
+		$res = $res . implode(",",$row);
+	}
+	echo $res;
+
+
+} else if ($q=="getproject") {
+	$p=$_REQUEST["n"];
+	$query = $connection->prepare("SELECT projectName FROM projects WHERE ID=?");
+	$query->bind_param('i',$p);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	while ($row = $result->fetch_assoc()){
+		$res = $res . implode(",",$row);
+	}
+	echo $res;
+
+	}
 ?>
