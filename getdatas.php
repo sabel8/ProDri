@@ -166,7 +166,9 @@ if ($q=="nodes") {
 
 } else if ($q=="getproject") {
 	$p=$_REQUEST["n"];
-	$query = $connection->prepare("SELECT projectName FROM projects WHERE ID=?");
+	$query = $connection->prepare("SELECT projectName FROM projects 
+		JOIN processes AS proc ON proc.projectID=projects.ID
+		WHERE proc.ID=?");
 	$query->bind_param('i',$p);
 	confirm($query);
 	$query->execute();

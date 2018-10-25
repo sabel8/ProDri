@@ -1,13 +1,12 @@
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processName, projectName){
+	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
 		this.y = y;
-		this.processName = processName;
-		this.projectName = projectName;
+		this.processID = processID;
 		if (txt==="START"){
 			this.status = 2;
 			this.duration=0;
@@ -43,8 +42,8 @@ class Node {
 			+"; res.person: "+getPersonFromID(this.responsiblePerson)
 			+"; duration: "+this.duration
 			+"; RACI: "+this.RACI
-			+"; Process Name: "+getProcessNameFromID(this.processName)
-			+"; Project Name: "+getProjectNameFromID(this.processName);
+			+"; Process Name: "+getProcessNameFromID(this.processID)
+			+"; Project Name: "+getProjectNameFromID(this.processID);
 		}
 
 		this.getRelevantData = function() {
@@ -52,15 +51,15 @@ class Node {
 			if (this.txt==="START") {
 				return "ID: "+this.ID
 				+"; text: "+this.txt
-				+"; Process Name: "+getProcessNameFromID(this.processName)
-				+"; Project Name: "+getProjectNameFromID(this.processName);
+				+"; Process Name: "+getProcessNameFromID(this.processID)
+				+"; Project Name: "+getProjectNameFromID(this.processID);
 
 			} else if (this.txt==="FINISH") {
 				return "ID: "+this.ID
 				+"; text: "+this.txt
 				+"; status: "+this.status
-				+"; Process Name: "+getProcessNameFromID(this.processName)
-				+"; Project Name: "+getProjectNameFromID(this.processName);
+				+"; Process Name: "+getProcessNameFromID(this.processID)
+				+"; Project Name: "+getProjectNameFromID(this.processID);
 
 			} else {
 				return "ID: "+this.ID
@@ -72,8 +71,8 @@ class Node {
 				+"; res.person: "+getPersonFromID(this.responsiblePerson)
 				+"; duration: "+this.duration
 				+"; RACI: "+this.RACI
-				+"; Process Name: "+getProcessNameFromID(this.processName)
-				+"; Project Name: "+getProjectNameFromID(this.processName);
+				+"; Process Name: "+getProcessNameFromID(this.processID)
+				+"; Project Name: "+getProjectNameFromID(this.processID);
 			}
 		}
 	}
