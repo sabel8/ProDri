@@ -34,7 +34,7 @@ function tableSetup(activeLi) {
 			setupModal(activeLi,array);
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=edittables&t="+activeLi, true);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=edittables&t="+activeLi, true);
 	xmlhttp.send();
 
 	//adding the button
@@ -179,7 +179,7 @@ function getProjects() {
 			array = this.responseText.split(";");
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=getprojects", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=getprojects", false);
 	xmlhttp.send();
 	return array;
 }
@@ -194,7 +194,7 @@ function getProfessions(){
 			array = this.responseText.split(";");
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=getprofessions", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=getprofessions", false);
 	xmlhttp.send();
 	return array;
 }
@@ -209,7 +209,7 @@ function getDeliverableTypes() {
 			array = this.responseText.split(";");
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=getdeltypes", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=getdeltypes", false);
 	xmlhttp.send();
 	return array;
 }
@@ -269,10 +269,11 @@ function runInsert(params) {
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
+			console.log(params.toString())
 			response = this.responseText;
 		}
 	};
-	xmlhttp.open("GET", "setdatas.php?q=insert&p="+params.toString(), false);
+	xmlhttp.open("GET", "php_functions/setdatas.php?q=insert&p="+params.toString(), false);
 	xmlhttp.send();
 	return response;
 }
@@ -287,7 +288,7 @@ function deleteRecord(tableName, ID) {
 			tableSetup(activeLi);
 		}
 	};
-	xmlhttp.open("GET", "setdatas.php?q=delete&p="+params.toString(), false);
+	xmlhttp.open("GET", "php_functions/setdatas.php?q=delete&p="+params.toString(), false);
 	xmlhttp.send();
 	alert(response);
 }

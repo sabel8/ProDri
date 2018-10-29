@@ -8,7 +8,7 @@ function getTasks() {
 			createTasksTable(taskArray);
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=tasklist&n="+name.replace(/ /g,"+"), true);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=tasklist&n="+name.replace(/ /g,"+"), true);
 	xmlhttp.send();
 }
 
@@ -64,7 +64,7 @@ function createTasksTable(array) {
 						break;
 				}
 			} else if(n==4) {
-				switch (c[n]){
+				switch (c[n].toLowerCase()){
 					case "r":
 						tableHtml += "<td>Responsible</td>";
 						break;

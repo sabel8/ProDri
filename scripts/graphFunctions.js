@@ -94,6 +94,8 @@ function calc() {
 }
 
 function deleteSelected() {
+	let nodes = graphObj.nodes;
+	let edges = graphObj.edges;
 	//hiding the status selector of the modal
 	d3.select("#statusSelect").style("display","none");
 	if (selectedEdge==null && selectedNode==null) {
@@ -104,7 +106,7 @@ function deleteSelected() {
 		let response = confirm("Do you really want to delete the selected edge?"
 			+" This action cannot be undone.");
 		if (response === true) {
-			console.log(runInsert(["edgeDel",selectedEdge.ID]));
+			//console.log(runInsert(["edgeDel",selectedEdge.ID]));
 			deleteEdge(selectedEdge);
 			selectedEdge=null;
 			redraw();
@@ -122,14 +124,14 @@ function deleteSelected() {
 				var curEdge=edges[i];
 				//if it derives from or points at the node
 				if (curEdge.toNodeID===selectedNode.ID || curEdge.fromNodeID===selectedNode.ID) {
-					console.log(runInsert(["edgeDel",curEdge.ID]));
+					//console.log(runInsert(["edgeDel",curEdge.ID]));
 					deleteEdge(curEdge);
 					//deletion makes length decreased by one
 					i--;
 				}
 			}
 			//deleting the node itself
-			console.log(runInsert(["nodeDel",selectedNode.ID]));
+			//console.log(runInsert(["nodeDel",selectedNode.ID]));
 			let pos = getPosInArray(selectedNode.ID,nodes);
 			nodes.splice(pos,1);
 			selectedNode=null;
@@ -177,6 +179,8 @@ function selectStatus() {
 //helper function
 //do not use directly
 function deleteEdge(edge){
+	let nodes = graphObj.nodes;
+	let edges = graphObj.edges;
 	let pos = getPosInArray(edge.ID,edges);
 	edges.splice(pos,1);
 }
@@ -185,6 +189,8 @@ function deleteEdge(edge){
 //iterates through all nodes and
 //defining it's INPUT and OUTPUT value
 function reviseInAndOutputs() {
+	let nodes = graphObj.nodes;
+	let edges = graphObj.edges;
 	//sets the output and input values
 	//for the predefined data
 	for (var i=0;i<nodes.length;i++) {
@@ -214,6 +220,8 @@ function reviseInAndOutputs() {
 //all predecessors are done then
 //sets the INPUT of the node to 1
 function checkForInput(nodeID) {
+	let nodes = graphObj.nodes;
+	let edges = graphObj.edges;
 	var allPreviousDone = true;
 	for (var i=0;i<edges.length;i++) {
 		var curEdge = edges[i];
@@ -258,6 +266,8 @@ function getNodeData() {
 //creates a new edge and pushes it to the array
 //if it passes validation
 function createEdge() {
+	let nodes = graphObj.nodes;
+	let edges = graphObj.edges;
 	if(shiftKeyPressed===true){
 
 		//if mouse is released without
@@ -293,9 +303,15 @@ function createEdge() {
 					edges.push(a);
 					//checkForInput(a.toNodeID);
 					reviseInAndOutputs();
+					redraw();
 				}
 			}
 		}
-		redraw();
+	}
+}
+
+function redraw(){
+	if (typeof graphObj !== 'undefined') {
+		graphObj.redraw();
 	}
 }

@@ -10,7 +10,7 @@ function getNodesAndEdges() {
 			setNodes(array);
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=nodes", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=nodes", false);
 	xmlhttp.send();
 
 	var xmlhttp = new XMLHttpRequest();
@@ -20,7 +20,7 @@ function getNodesAndEdges() {
 			setEdges(array);
 		}
 	};
-	xmlhttp.open("GET", "getdatas.php?q=edges", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=edges", false);
 	xmlhttp.send();
 	
 	//redraw if graph should be shown

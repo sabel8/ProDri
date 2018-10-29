@@ -3,14 +3,14 @@ require_once("config.php");
 include(TEMPLATE.DS."header.php");
 ?>
 
-<script src="app.js" type="text/javascript"></script>
+<script src="scripts/app.js" type="text/javascript"></script>
 
 <div class="container" id="body">
 	<p>CTRL+katt a node-on   --> állapot változtatás</p>
 	<p>shift+húzás a noderól --> új edge létrehozása</p>
 	<p>katt a node-on        --> infó róla</p>
 	<p>Shift+katt a vásznon  --> új node létrehozása</p>
-	<p>Ha változtatást jóvá akarod hagyni akkor a submit graph gombra nyomj! (kivéve törlés esetében)</p>
+	<p>Ha változtatást jóvá akarod hagyni akkor a submit graph gombra nyomj!</p>
 	<hr>
 	<p>
 		ID of starting node: <input type="number" id="startNodeID" value="1"><br>
@@ -24,14 +24,17 @@ include(TEMPLATE.DS."header.php");
 			<label for="startEndMode">Use START --> END nodes</label>
 		</p>
 	</div>
-	<hr>
-	<div id="authorities">
-		<p>Authority (beta):
-			<input id="processOwnerAuth" type="radio" name="authority" value="po" checked>
-			<label for="processOwnerAuth">Proces owner</label>
-			<input id="userAuth" type="radio" name="authority" value="u">
-			<label for="userAuth">User</label>
-		</p>
+	<br>
+	<div id="mainDiv">
+		<button class="btn btn-default" onclick="downloadButton()">Download</button>
+		<input type="file" accept=".json" onchange="upload(event)" id="hidden-file-upload">
+		<button class="btn btn-default" onclick="uploadButton()">Upload</button>
+		<button class="btn btn-default" onclick="calc()">Critical path</button>
+		<?php
+		//user cannot delete nor overwrite the graph
+		if($_COOKIE["auth"]!="u"){ echo '<button class="btn btn-default" onclick="deleteSelected()">Delete</button>
+		<button class="btn btn-default" onclick="submitGraph()">Submit graph</button>';} ?>
+		<br><br>
 	</div>
 
 	<a id="objectInfoModalTrigger" style="display: none" data-toggle="modal" href="#objectInfoModal"></a>
@@ -111,5 +114,4 @@ include(TEMPLATE.DS."header.php");
 
 		</div>
 	</div>
-	
 <?php include(TEMPLATE.DS."footer.php")?>

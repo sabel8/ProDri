@@ -1,5 +1,5 @@
 <?php
-require_once("config.php");
+require_once("../config.php");
 // get the q parameter from URL
 $q = $_REQUEST["q"];
 $res = "";

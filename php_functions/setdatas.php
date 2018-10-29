@@ -1,12 +1,11 @@
 <?php 
-require_once("config.php");
+require_once("../config.php");
 
 // get the parameters from URL
 $q = $_REQUEST["q"];
 $p = $_REQUEST["p"];
-$p = explode(",",$p);
 if ($q=="insert") {
-	
+	$p = explode(",",$p);
 	global $connection;
 	switch ($p[0]) {
 		case "processes":
@@ -50,16 +49,26 @@ if ($q=="insert") {
 			$query=$connection->prepare("DELETE FROM nodes WHERE ID=?");
 			$query->bind_param("i",$p[1]);
 			break;
-
+		case "recNodes":
+			$query = $connection->prepare("INSERT INTO recommended_nodes (ID,name,xCord,yCord,status,professionID,raci,duration,deliverableID,recommendationID) VALUES (?,?,?,?,?,?,?,?,?,?)");
+			$query->bind_param("isiiiisiii",$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10]);
+			break;
+		case "recEdges":
+			$query = $connection->prepare("INSERT INTO recommended_edges (ID,fromNodeID,toNodeID,recommendationID) VALUES (NULL,?,?,?)");
+			$query->bind_param("iii",$p[1],$p[2],$p[3]);
+			break;
 	}
 	confirm($query);
 	if ($query->execute()) {
 	    echo "New record created successfully";
 	} else {
-	    echo "Error";
+	    echo "Error: ".mysqli_error($connection);
 	}
+
+
 } else if ($q=="delete") {
 
+	$p = explode(",",$p);
 	global $connection;
 	$query = $connection->prepare("DELETE FROM ".$p[0]." WHERE ID=?");
 
@@ -70,6 +79,34 @@ if ($q=="insert") {
 	    echo "Record with ID \"{$p[1]}\" was successfully removed!";
 	} else {
 	    echo "Error while deleting record!";
+	}
+
+
+} else if ($q=="recomStatusChange"){
+	global $connection;
+	$query = $connection->prepare("UPDATE recommendations SET status=? WHERE ID=?");
+
+	confirm($query);
+	$query->bind_param('ii',$_POST["to"],$_POST["p"]);
+
+	if ($query->execute()) {
+	    echo "Recommendation submitted successfully!";
+	} else {
+	    echo "Error while updating record!";
+	}
+
+
+} else if ($_POST["q"]=="newRecom"){
+	global $connection;
+	$query = $connection->prepare("INSERT INTO recommendations (ID,submitterPersonID,forProcessID,status) VALUES (NULL,?,?,0)");
+
+	confirm($query);
+	$query->bind_param('ii',$_POST["from"],$_POST["p"]);
+
+	if ($query->execute()) {
+	    echo "Recommendation submitted successfully!";
+	} else {
+	    echo "Error while updating record!";
 	}
 }
 ?>

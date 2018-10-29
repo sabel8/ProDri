@@ -1,9 +1,9 @@
 <?php
 
 //output buffering
-/*ob_start();
+/*ob_start();*/
 
-session_start();*/
+session_start();
 
 defined("DS") ? null : define("DS", DIRECTORY_SEPARATOR);
 
@@ -21,11 +21,9 @@ defined("DB_NAME") ? null : define("DB_NAME", "prodri_db");
 
 $connection = mysqli_connect(DB_HOST,DB_USER,DB_PASS,DB_NAME);
 
-require_once("functions.php");
+require_once("php_functions/functions.php");
 
 
 query("set names 'utf8'");
-
-
 
  ?>
