@@ -13,7 +13,7 @@ include(TEMPLATE.DS."header.php");
 		switch ($_COOKIE["auth"]) {
 			//PROJECT MANAGER
 			case "pm":
-
+				$innerhtml="<h3><b>WORK IN PROGRESS...</b></h3>";
 				break;
 
 			//PROCESS OWNER
@@ -53,8 +53,8 @@ TABLE;
 						$cells = explode(",",$rows[$i]);
 
 						//query for getting the nodes of the recommendation
-						$query = $connection->prepare("SELECT rn.*,r.forProcessID FROM recommended_nodes rn, recommendations r
-							WHERE rn.recommendationID=?");
+						$query = $connection->prepare("SELECT r.nodeID,r.name,r.xCord,r.yCord,r.status,r.professionID,\"\",r.duration,r.raci,re.forProcessID,re.forProcessID FROM recommended_nodes r, recommendations re
+							WHERE r.recommendationID=?");
 						$query->bind_param('i',$cells[0]);
 						confirm($query);
 						$query->execute();
@@ -94,7 +94,7 @@ TABLE;
 								break;
 						}
 
-						$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[$i]},[{$nodes}],[{$edges}])\">";
+						$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}])\">";
 						for ($n=0;$n < count($cells);$n++){
 							$innerhtml.='<td class="text-center">';
 							switch($n){
@@ -119,7 +119,7 @@ TABLE;
 							}
 							$innerhtml.="</td>";
 						}
-						if ($cells[2]==1  /*to be removed...*/) {
+						if ($cells[2]==1) {
 							$innerhtml.="<td class='text-center'>
 							<button class='btn btn-success' type='button' onclick='changeRecommendationStatus({$cells[0]},2)'>Accept</button>
 							<button class='btn btn-danger' type='button' onclick='changeRecommendationStatus({$cells[0]},3)'>Refuse</button>
@@ -177,7 +177,7 @@ TABLE;
 
 						//ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID
 						$query = $connection->prepare("
-							SELECT r.ID,r.name,r.xCord,r.yCord,r.status,r.professionID,\"\",r.duration,r.raci,re.forProcessID
+							SELECT r.nodeID,r.name,r.xCord,r.yCord,r.status,r.professionID,\"\",r.duration,r.raci,re.forProcessID
 							FROM recommended_nodes r, recommendations re WHERE r.recommendationID=? AND re.ID=r.recommendationID");
 						$query->bind_param('i',$cells[0]);
 						confirm($query);
@@ -219,7 +219,7 @@ TABLE;
 								$colorClass="danger";
 								break;
 						}
-						$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[$i]},[{$nodes}],[{$edges}])\">";
+						$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}])\">";
 						for ($n=0;$n < count($cells);$n++){
 							$innerhtml.='<td class="text-center">';
 							switch($n){
@@ -245,11 +245,11 @@ TABLE;
 							$innerhtml.="</td>";
 						}
 						if ($cells[2]==0) {
-							$innerhtml.="<td class='text-center'><button class='btn btn-primary' type='button' onclick='changeRecommendationStatus({$cells[0]},1)'>Submit</button></td>";
+							$innerhtml.="<td class='text-center'><button class='btn btn-primary' type='button' onclick='changeRecommendationStatus({$cells[0]},1)'>Submit</button>";
 						} else {
-							$innerhtml.="<td class='text-center'><i>You have already submitted this recommendation.</i></td>";
+							$innerhtml.="<td class='text-center'><i>You have already submitted this recommendation.</i>";
 						}
-						$innerhtml.="</tr>";
+						$innerhtml.=" <button class='btn btn-danger' type='button' onclick='removeRecommendation({$cells[0]})'>Remove</button></td></tr>";
 					}
 					$innerhtml .= "</tbody></table></div>";
 

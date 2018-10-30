@@ -644,7 +644,7 @@ class Graph{
 			var draggedNode = getNodeByID(d.ID);
 			draggedNode.x += d3.event.dx;
 			draggedNode.y += d3.event.dy;
-			redraw()
+			redraw();
 		}
 	}
 

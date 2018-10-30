@@ -50,12 +50,24 @@ if ($q=="insert") {
 			$query->bind_param("i",$p[1]);
 			break;
 		case "recNodes":
-			$query = $connection->prepare("INSERT INTO recommended_nodes (ID,name,xCord,yCord,status,professionID,raci,duration,deliverableID,recommendationID) VALUES (?,?,?,?,?,?,?,?,?,?)");
+			$query = $connection->prepare("INSERT INTO recommended_nodes (nodeID,name,xCord,yCord,status,professionID,raci,duration,deliverableID,recommendationID) VALUES (?,?,?,?,?,?,?,?,?,?)");
 			$query->bind_param("isiiiisiii",$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10]);
 			break;
 		case "recEdges":
 			$query = $connection->prepare("INSERT INTO recommended_edges (ID,fromNodeID,toNodeID,recommendationID) VALUES (NULL,?,?,?)");
 			$query->bind_param("iii",$p[1],$p[2],$p[3]);
+			break;
+		case "recNodeDel":
+			$query = $connection->prepare("DELETE FROM recommended_nodes WHERE recommendationID=?");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "recEdgeDel":
+			$query = $connection->prepare("DELETE FROM recommended_edges WHERE recommendationID=?");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "recDel":
+			$query = $connection->prepare("DELETE FROM recommendations WHERE ID=?");
+			$query->bind_param("i",$p[1]);
 			break;
 	}
 	confirm($query);
@@ -104,7 +116,16 @@ if ($q=="insert") {
 	$query->bind_param('ii',$_POST["from"],$_POST["p"]);
 
 	if ($query->execute()) {
-	    echo "Recommendation submitted successfully!";
+		$query=$connection->prepare("SELECT ID FROM recommendations WHERE submitterPersonID=? AND forProcessID=?  AND status=0 ORDER BY ID DESC");
+		confirm($query);
+		$query->bind_param('ii',$_POST["from"],$_POST["p"]);
+		$query->execute();
+		$result = $query->get_result();
+		while ($row = $result->fetch_assoc()){
+			echo implode(",", $row);
+			return;
+		}
+		
 	} else {
 	    echo "Error while updating record!";
 	}

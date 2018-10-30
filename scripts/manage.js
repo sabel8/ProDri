@@ -19,28 +19,29 @@ function createRecommendation(){
 }
 
 function submitGraph(processID,personID) {
-	for (var i = 0; i < graphObj.nodes.length; i++) {
-		var c = nodes[i];
-		//name,xCord,yCord,status,professionID,raci,duration,deliverableID,recommendationID
-		console.log(runInsert(["recNodes",c.ID,c.txt,c.x,c.y,c.status,c.knowledgeArea,c.RACI,c.duration,c.deliverableID,processID]));
-	}
-
-	for (var i = 0; i < graphObj.edges.length; i++) {
-		var c = graphObj.edges[i];
-		console.log(runInsert(["recEdges",c.fromNodeID,c.toNodeID,processID]));
-	}
-
+	var recomID;
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.open("POST", "php_functions/setdatas.php", false);
 	xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
-			console.log(this.responseText);
+			recomID = this.responseText;
 		}
 	};
 	xmlhttp.send("q=newRecom&p="+processID+"&from="+personID);
+	console.log("recomID="+recomID);
 
-	//location.reload(true);
+	for (var i = 0; i < graphObj.nodes.length; i++) {
+		var c = nodes[i];
+		//name,xCord,yCord,status,professionID,raci,duration,deliverableID,recommendationID
+		console.log(runInsert(["recNodes",c.ID,c.txt,c.x,c.y,c.status,c.knowledgeArea,c.RACI,c.duration,c.deliverableID,recomID]));
+	}
+
+	for (var i = 0; i < graphObj.edges.length; i++) {
+		var c = graphObj.edges[i];
+		console.log(runInsert(["recEdges",c.fromNodeID,c.toNodeID,recomID]));
+	}
+	location.reload(true);
 
 }
 
@@ -57,8 +58,6 @@ function viewRecommendation(recID,recNodes,recEdges) {
 		var c = recEdges[i];
 		realEdges[i]=new Edge(Number(c[0]),Number(c[1]),Number(c[2]));
 	}
-
-	console.log(realEdges);
 	d3.select("#manageEditorBody").html("");
 	graphObj = new Graph(realNodes,realEdges,false,"newNodeModalTrigger","objectInfoModalTrigger",true);
 	var parent = d3.select("#manageEditorBody").node();
@@ -89,5 +88,12 @@ function changeRecommendationStatus(recomID,status) {
 	};
 	xmlhttp.send("q=recomStatusChange&p="+recomID+"&to="+status);
 
+	location.reload(true);
+}
+
+function removeRecommendation(recomID){
+	console.log(runInsert(["recNodeDel",recomID]));
+	console.log(runInsert(["recEdgeDel",recomID]));
+	console.log(runInsert(["recDel",recomID]));
 	location.reload(true);
 }

@@ -12,6 +12,8 @@ function getTasks() {
 	xmlhttp.send();
 }
 
+var graphObj;
+
 function createTasksTable(array) {
 	//if nothing is returned
 	//inform the user
@@ -19,9 +21,13 @@ function createTasksTable(array) {
 		d3.select("#tasksTable").node().innerHTML = "<h3>This person either doesn't exist or doesn't have any task.</h3>";
 		return;
 	}
-	var tableHtml = "<table class='table table-hover'>";
+	var tableHtml = "<table class='table table-hover table-bordered'>";
 	tableHtml+="<tr><th>ID</th><th>Name</th><th>Status</th><th>Duration</th>"
 	+"<th>RACI</th><th>Process name</th><th>Project name</th></tr>";
+
+	//(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpec)
+	getNodesAndEdges();
+	graphObj = new Graph(nodes,edges,false,"","",false);
 
 	//append the task with their input values
 	for (var i=0;i<array.length-1;i++) {
@@ -85,10 +91,9 @@ function createTasksTable(array) {
 
 		tableHtml += "</tr>";
 	}
-
 	tableHtml += "</table>";
-
 	d3.select("#tasksTable").node().innerHTML = tableHtml;
+	
 }
 
 //helper function for sorting
