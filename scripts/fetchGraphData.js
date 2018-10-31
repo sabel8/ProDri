@@ -1,16 +1,16 @@
 //getting data from database
 //through getdatas.php file
-function getNodesAndEdges() {
+function getNodesAndEdges(procID) {
 	var array;
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			array = this.responseText.split(";");
-			//console.log(this.responseText)
+			console.log(this.responseText)
 			setNodes(array);
 		}
 	};
-	xmlhttp.open("GET", "php_functions/getdatas.php?q=nodes", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=nodes&p="+procID, false);
 	xmlhttp.send();
 
 	var xmlhttp = new XMLHttpRequest();

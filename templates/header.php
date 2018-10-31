@@ -1,11 +1,12 @@
 <?php 
-if (!isset($_COOKIE["auth"])){
-	setcookie("auth","u");
-	$_COOKIE["auth"] = "u";
+//initialize auth session variable
+if (!isset($_SESSION["auth"])){
+	$_SESSION["auth"] = "u";
 }
+
+//sets the auth session variable if get is detected
 if (isset($_GET["auth"])){
-	setcookie("auth",$_GET["auth"]);
-	$_COOKIE["auth"] = $_GET["auth"];
+	$_SESSION["auth"] = $_GET["auth"];
 }
 ?>
 
@@ -40,7 +41,6 @@ if (isset($_GET["auth"])){
 		//desing values for svg elements
 		//speaks for themselves...
 		const diffFromCursor = 0.98,
-		circleRadius = 40,
 		edgeWidth = 3,
 		selectedNodeColor = "gold",
 		rectRoundness = 20,
@@ -51,6 +51,8 @@ if (isset($_GET["auth"])){
 		//of the nodes and the edges
 		var nodes = new Array(),
 		edges = new Array();
+
+		//sets the background for the active menu item
 		$(document).ready(function() {
 			// get current URL path and assign 'active' class
 			var pathname = window.location.pathname;
@@ -58,6 +60,7 @@ if (isset($_GET["auth"])){
 			$('.nav > li > a[href="'+pathname+'"]').parent().addClass('active');
 		});
 
+		//sets the php session variable for the authorization
 		function switchAuth() {
 			var selected = $("#authSelect input[name=authority]:checked").val();
 			var url = window.location.pathname;
@@ -87,7 +90,9 @@ if (isset($_GET["auth"])){
 				<ul class="nav navbar-nav">
 					<li><a href="/prodri/index.php">Home</a></li>
 					<li><a href="/prodri/tasklist.php">My tasks</a></li>
-					<li><a href="/prodri/editdatabase.php">Edit database</a></li>
+					<?php if($_SESSION["auth"]!="u"){
+						echo '<li><a href="/prodri/editdatabase.php">Edit database</a></li>';
+					} ?>
 					<li><a href='/prodri/manage.php'>Manage recommendations</a></li>
 			    </ul>
 			    <ul class="nav navbar-nav navbar-right">
@@ -96,17 +101,17 @@ if (isset($_GET["auth"])){
 			    			<form id="authSelect">
 			    				<label>
 			    					<input id="projectManagerAuth" type="radio" name="authority" value="pm" onchange="switchAuth()"
-			    					<?php if($_COOKIE["auth"]=="pm") echo "checked" ?>>
+			    					<?php if($_SESSION["auth"]=="pm") echo "checked" ?>>
 			    					Project manager
 			    				</label>
 								<label>
 									<input id="processOwnerAuth" type="radio" name="authority" value="po" onchange="switchAuth()" 
-									<?php if($_COOKIE["auth"]=="po") echo "checked" ?>>
+									<?php if($_SESSION["auth"]=="po") echo "checked" ?>>
 									Process owner
 								</label>
 								<label>
 									<input id="userAuth" type="radio" name="authority" value="u" onchange="switchAuth()"
-									<?php if($_COOKIE["auth"]=="u") echo "checked" ?>>
+									<?php if($_SESSION["auth"]=="u") echo "checked" ?>>
 									User
 								</label>
 							</form>

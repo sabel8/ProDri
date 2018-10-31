@@ -27,20 +27,20 @@ include(TEMPLATE.DS."header.php");
 	<br>
 	<div id="mainDiv">
 		<button class="btn btn-default" onclick="downloadButton()">Download</button>
-		<input type="file" accept=".json" onchange="upload(event)" id="hidden-file-upload">
-		<button class="btn btn-default" onclick="uploadButton()">Upload</button>
+		<!--<input type="file" accept=".json" onchange="upload(event)" id="hidden-file-upload">
+		<button class="btn btn-default" onclick="uploadButton()">Upload</button>-->
 		<button class="btn btn-default" onclick="calc()">Critical path</button>
 		<?php
 		//user cannot delete nor overwrite the graph
-		if($_COOKIE["auth"]!="u"){ echo '<button class="btn btn-default" onclick="deleteSelected()">Delete</button>
-		<button class="btn btn-default" onclick="submitGraph()">Submit graph</button>';} ?>
+		if($_SESSION["auth"]!="u"){ echo '<button class="btn btn-default" onclick="deleteSelected()">Delete</button>
+		<button class="btn btn-default" onclick="submitGraphHome()">Submit graph</button>';} ?>
 		<br><br>
 	</div>
 
 	<a id="objectInfoModalTrigger" style="display: none" data-toggle="modal" href="#objectInfoModal"></a>
 	<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="setupModal()"></a>
 
-	<!-- Obejct Info Modal -->
+	<!-- Object Info Modal -->
 	<div id="objectInfoModal" class="modal fade" role="dialog">
 		<div class="modal-dialog">
 			<div class="modal-content">

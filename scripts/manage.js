@@ -3,7 +3,7 @@ var nodes,edges;
 var graphObj;
 
 function createRecommendation(){
-	getNodesAndEdges();
+	getNodesAndEdges(1);//todo --> dinamic
 	openedCreator=true;
 	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
 	reviseInAndOutputs();
@@ -78,7 +78,11 @@ function changeRecommendationStatus(recomID,status) {
 					alert("You successfully submitted your recommendation. Thank you!");
 					break;
 				case 2:
-					alert("You successfully accepted this recommendation. Thank you!");
+					console.log(runInsert(["nodeProcDel",recomID]));
+					console.log(runInsert(["nodeRecToLive",recomID]));
+					console.log(runInsert(["edgeProcDel",recomID]));
+					console.log(runInsert(["edgeRecToLive",recomID]));
+					alert("You successfully accepted this recommendation and made it official. Thank you!");
 					break;
 				case 3:
 					alert("You successfully refused this recommendation. Thank you!");

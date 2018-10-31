@@ -1,4 +1,4 @@
-//name of the process
+//ID of the process
 var curProcessID = 1;
 
 //defining variables for edge drawing
@@ -10,7 +10,7 @@ var toNode, fromNode, mousePos, shiftKeyPressed=false;
 var selectedEdge, selectedNode;
 
 var graphObj;
-getNodesAndEdges();
+getNodesAndEdges(curProcessID);//TODO --> dynamic
 
 //the whole functionality starts after the page has loaded
 window.onload = function() {	
@@ -73,7 +73,7 @@ function getPersonOfProfession(professionID){
 	return array;
 }
 
-function submitGraph() {
+function submitGraphHome() {
 	if (confirm("Are you sure you want to add this recommendation to this process? This action cannot be undone.")) {
 		//deleting all edges of the process
 		var xmlhttp = new XMLHttpRequest();

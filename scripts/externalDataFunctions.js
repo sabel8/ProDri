@@ -1,3 +1,5 @@
+/**************      DOWNLOADING   *************/
+
 //creates JSON file
 function downloadButton() {
 	var str = [window.JSON.stringify({"nodes" :nodes, "edges" :edges})];
@@ -16,13 +18,12 @@ function download(filename, text) {
 	document.body.removeChild(element);
 }
 
-
+/**************      UPLOADING   *************/
 function uploadButton() {
 	//clicks the invisible upload input button
 	//then fires the upload(event) function
 	document.getElementById("hidden-file-upload").click();
 }
-
 
 //helper function for uploading
 function upload(event) {

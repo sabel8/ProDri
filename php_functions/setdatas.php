@@ -33,7 +33,7 @@ if ($q=="insert") {
 			$query->bind_param('s',$p[1]);
 			break;
 		case "nodes":
-			$query=$connection->prepare("INSERT INTO nodes (ID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,processID)
+			$query=$connection->prepare("INSERT INTO nodes (nodeID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,processID)
 				VALUES (?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE ID=?,txt=?,xCord=?,yCord=?,status=?,professionID=?,responsiblePersonID=?,duration=?,RACI=?,processID=?");
 			$query->bind_param("isiiiiiisiisiiiiiisi",$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10],$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10]);
 			break;
@@ -69,10 +69,38 @@ if ($q=="insert") {
 			$query = $connection->prepare("DELETE FROM recommendations WHERE ID=?");
 			$query->bind_param("i",$p[1]);
 			break;
+		case "nodeProcDel":
+			//  p[1] = recomID
+			$query = $connection->prepare("DELETE FROM nodes WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "nodeRecToLive":
+			//  p[1] = recomID
+			$query = $connection->prepare("INSERT INTO nodes (nodeID,txt,xCord,yCord,status,professionID,duration,RACI,processID)
+				SELECT rn.nodeID,rn.name,rn.xCord,rn.yCord,rn.status,rn.professionID,rn.duration,rn.raci,re.forProcessID
+				FROM recommended_nodes rn 
+				LEFT JOIN recommendations re ON rn.recommendationID=re.ID
+				WHERE rn.recommendationID=?");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "edgeProcDel":
+			//  p[1] = recomID
+			$query = $connection->prepare("DELETE FROM edges WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "edgeRecToLive":
+			//  p[1] = recomID
+			$query = $connection->prepare("INSERT INTO edges (fromNodeID,toNodeID,processID)
+				SELECT r.fromNodeID,r.toNodeID,re.forProcessID
+				FROM recommended_edges r 
+				LEFT JOIN recommendations re ON r.recommendationID=re.ID
+				WHERE r.recommendationID=?");
+			$query->bind_param("i",$p[1]);
+			break;
 	}
 	confirm($query);
 	if ($query->execute()) {
-	    echo "New record created successfully";
+		echo "New record created successfully";
 	} else {
 	    echo "Error: ".mysqli_error($connection);
 	}

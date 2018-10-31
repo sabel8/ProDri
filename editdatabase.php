@@ -5,6 +5,7 @@ include(TEMPLATE.DS."header.php");
 
 <div class="container">
 	<div class="well">
+		<?php if ($_SESSION["auth"]=="u"){echo "<h2>You do not have access to this site!</h2>";exit();} ?>
 		<div class="dropdown">
 		  <button id="dropdownButton" class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select an option
 		  <span class="caret"></span></button>
@@ -33,33 +34,7 @@ include(TEMPLATE.DS."header.php");
 					<h4 id="nodeName" class="modal-title">New <span id="elementName"></span> record:</h4>
 				</div>
 				<div class="modal-body">
-					<form id="newElementForm"> <!--
-
-						Task name:<br>
-						<input type="text" id="nodeTitle" value="Example task 1">
-						<br><br>
-
-						Knowledge area: (beta)<br>
-						<input type="text" id="nodeKnowledgeArea" value="lawyer">
-						<br><br>
-
-						Responsible person: (beta)<br>
-						<input type="text" id="nodeResponsiblePerson" value="Soma Kiss">
-						<br><br>
-
-						Duration:<br>
-						<input type="number" id="nodeDuration" value="7">
-						<br><br>
-
-						RACI:<br>
-						<div id="nodeRaci">
-						</div>
-
-						<br><br>
-						Description: (beta)<br>
-						<textarea name="nodeDescription" rows="5" cols="50">Example...</textarea>
-
-						-->
+					<form id="newElementForm">
 					</form> 
 				</div>
 				<div class="modal-footer">

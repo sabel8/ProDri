@@ -4,7 +4,9 @@ require_once("../config.php");
 $q = $_REQUEST["q"];
 $res = "";
 if ($q=="nodes") {
-	$query = query("SELECT * FROM nodes");
+
+	$query = query("SELECT nodeID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,processID
+		FROM nodes WHERE processID=".$_REQUEST['p']);
 	confirm($query);
 	while ($row = fetch_array($query)){
 		$res = $res . implode("|",$row) .";\n";
