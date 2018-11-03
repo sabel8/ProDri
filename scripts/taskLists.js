@@ -70,20 +70,7 @@ function createTasksTable(array) {
 						break;
 				}
 			} else if(n==4) {
-				switch (c[n].toLowerCase()){
-					case "r":
-						tableHtml += "<td>Responsible</td>";
-						break;
-					case "a":
-						tableHtml += "<td>Accountable</td>";
-						break;
-					case "c":
-						tableHtml += "<td>Consultant</td>";
-						break;
-					case "i":
-						tableHtml += "<td>Informed</td>";
-						break;
-				}
+				tableHtml+="<td>"+getRACItext(c[n])+"</td>";
 			} else {
 				tableHtml += "<td>"+c[n]+"</td>";
 			}

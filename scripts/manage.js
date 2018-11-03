@@ -1,5 +1,4 @@
 var openedCreator=false;
-var nodes,edges;
 var graphObj;
 
 function createRecommendation(){
@@ -42,7 +41,6 @@ function submitGraph(processID,personID) {
 		console.log(runInsert(["recEdges",c.fromNodeID,c.toNodeID,recomID]));
 	}
 	location.reload(true);
-
 }
 
 function viewRecommendation(recID,recNodes,recEdges) {
@@ -100,4 +98,18 @@ function removeRecommendation(recomID){
 	console.log(runInsert(["recEdgeDel",recomID]));
 	console.log(runInsert(["recDel",recomID]));
 	location.reload(true);
+}
+
+function submitPersonAssignment(){
+/*
+get all select element
+get their nodeID, personID and selected value
+iterate
+	if personID not -1
+		check if personProfID=nodeProfID
+			runInsert (UPDATE nodes SET personID="personID" WHERE nodeID="nodeID")
+	else nothing
+end loop
+refresh
+*/
 }

@@ -210,6 +210,26 @@ function getFinishNodeID() {
 	}
 	return -1;
 }
+
+function getRACItext(raci){
+	switch (raci.toLowerCase()){
+		case "r":
+			txt = "Responsible";
+			break;
+		case "a":
+			txt = "Accountable";
+			break;
+		case "c":
+			txt = "Consultant";
+			break;
+		case "i":
+			txt = "Informed";
+			break;
+		default:
+			txt="Error";
+	}
+	return txt;
+}
 //end of node functions
 
 //EDGE CLASS
