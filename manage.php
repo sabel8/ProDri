@@ -4,27 +4,26 @@ include(TEMPLATE.DS."header.php");
 
 function getProjectManagerHTML(){
 	$innerhtml="<h2><b>Vacant tasks</b></h2>";
-	$processes = getRowsOfQuery("
-			SELECT processName,p.ID,projects.projectName FROM nodes n,processes p
+	$processes = getRowsOfQuery("SELECT processName,p.ID,projects.projectName FROM nodes n,processes p
 			LEFT JOIN projects ON projects.ID=p.projectID
-			WHERE n.processID=p.ID AND ISNULL(n.responsiblePersonID) GROUP BY processName"); 
+			WHERE n.processID=p.ID GROUP BY processName"); 
+	
 	
 	//creating a table if there is any vacant task
 	if(count($processes)>=2){
 		
 		for ($j=0;$j<count($processes)-1;$j++){
 			$curProcess=explode(",",$processes[$j]);
-			$rows = getRowsOfQuery("
-					SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci,prof.ID
+			$rows = getRowsOfQuery("SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci,prof.ID
 					FROM nodes n
 					LEFT JOIN professions prof 
 						ON n.professionID=prof.ID
 					LEFT JOIN processes p
 						ON n.processID=p.ID
-					WHERE ISNULL(n.responsiblePersonID) AND n.processID=".$curProcess[1]);
+					WHERE n.processID=".$curProcess[1]);
 			$innerhtml .= "<hr style='border-color:lightgrey'><h4><b>".$curProcess[0]."</b> (".$curProcess[2].")</h4><br>";
 			$innerhtml .= getTableHeader(array("ID","Task name","Profession","RACI","Authorized person"));
-
+			
 			for ($i=0; $i < count($rows)-1; $i++) {
 				$innerhtml.="<tr>";
 				$cells = explode(",",$rows[$i]);
@@ -37,14 +36,22 @@ function getProjectManagerHTML(){
 						$innerhtml.="<td>".$cells[$n]."</td>";
 					}
 				}
-				$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
-				WHERE pe.professionID=pr.ID AND pr.ID=".$cells[count($cells)-1]);
-				$innerhtml.="<td><select style='width:100%'><option value=\"-1\"> </option>";
-				for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
-					$values=explode(",",$avaliablePersonRows[$n]);
-					$innerhtml.='<option value='.$values[0].'>'.$values[1].'</option>';
+
+				$innerhtml.="<td>";
+				if (is_numeric($cells[count($cells)-1])) {
+					$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
+					WHERE pe.professionID=pr.ID AND pr.ID=".$cells[count($cells)-1]);
+					$innerhtml.="<select style='width:100%'><option value=\"-1\"> </option>";
+					for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
+						$values=explode(",",$avaliablePersonRows[$n]);
+						$innerhtml.='<option value='.$values[0].'>'.$values[1].'</option>';
+					}
+					$innerhtml.="</select>";
 				}
-				$innerhtml.="</select></td></tr>";		
+				$innerhtml.="</td></tr>";
+				
+
+						
 			}
 			$innerhtml .= "</tbody></table>";
 			$innerhtml .= "<div style='float:right'><button class='btn btn-success' type='submit' onclick='submitPersonAssignment()'>Assign persons</button></div>";

@@ -6,7 +6,7 @@ function getNodesAndEdges(procID) {
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			array = this.responseText.split(";");
-			console.log(this.responseText)
+			//console.log(this.responseText);
 			setNodes(array);
 		}
 	};

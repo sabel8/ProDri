@@ -424,9 +424,10 @@ class Graph{
 
 	redraw() {
 		var thisGraph = this;
-
+		
 		//clearing pathes to be able to redraw them
 		d3.selectAll("#edge").remove();
+		
 		//clearing nodes to be able to redraw them
 		d3.select("#graph").selectAll("g").remove();
 
@@ -435,7 +436,7 @@ class Graph{
 		var edges = thisGraph.edges;
 		for(let i=0;i<edges.length;i++){
 			d3.select("#graph").append("path")
-			.attr("id","edge")
+			.attr("id",function(){return "edgeID"+edges[i].ID})
 			.attr("d",function(){
 				return getPath(edges[i]);
 			})
@@ -473,7 +474,7 @@ class Graph{
 				let d = edges[i];
 				//hiding the status selector of the modal
 				d3.select("#statusSelect").style("display","none");
-
+	
 				if (selectedEdge===d) {
 					d3.select(this).classed("hoverEdge",false)
 					.attr("marker-end","url(#arrowhead)");
@@ -501,6 +502,7 @@ class Graph{
 		.data(nodes)
 		.enter()
 		.append("g")
+		.attr("id",function(d,i){return "gNum"+d.ID})
 		.attr("transform", function(d){
 			return "translate("+d.x+","+d.y+")"
 		})
@@ -524,10 +526,8 @@ class Graph{
 			mousePos = d3.mouse(this);
 		})
 		.on("mouseup",function(d){shiftKeyPressed=false})
-		
 		.on("click", function(d,i){
-			if (d3.event.defaultPrevented) return;
-			console.log("ott")
+			console.log("ott");
 			//changing status on ctrl+click
 			if (d3.event.ctrlKey) {
 				if (justSpectating){
@@ -623,13 +623,16 @@ class Graph{
 		g.each(function(d){
 			insertText(d3.select(this),d.ID,d.txt);
 		});
+
 		//removes the dragged uncomplete edge
 		d3.selectAll("#new").remove();
+
 	}//end of redraw function
 
 	//drag start, (creates if necessary and)
 	//draws a temporary edge
 	dragstarted(d) {
+		console.log("statr drag");
 		if (shiftKeyPressed===true) {
 			if (justSpectating==true){
 				alert("You are in spectating mode, you cannot create new edge.");
@@ -664,7 +667,10 @@ class Graph{
 			var draggedNode = getNodeByID(d.ID);
 			draggedNode.x += d3.event.dx;
 			draggedNode.y += d3.event.dy;
-			redraw();
+			d3.select(this).attr("transform","translate("+draggedNode.x+","+draggedNode.y+")");
+			
+			updateEdges();
+			updateNodes();
 		}
 	}
 
@@ -672,11 +678,28 @@ class Graph{
 	dragend(d) {
 		createEdge();
 		shiftKeyPressed=false;
+		updateEdges();
+		updateNodes();
 	}
 
 	//zoom functionality
 	zoom() {
 		d3.select("#graph").attr("transform", d3.event.transform);
 	}
+
 }
 
+function updateEdges(){
+	for(let i=0;i<edges.length;i++){
+		var curEdge = edges[i];
+		d3.select("#edgeID"+curEdge.ID).attr("d",function(){ return getPath(curEdge)});
+	}
+}
+
+function updateNodes(){
+	console.log("friss");
+	for(var i=0;i<nodes.length;i++){
+		var curNode=nodes[i];
+		d3.select("#gNum"+curNode.ID).attr("transform","translate("+curNode.x+","+curNode.y+")");
+	}
+}
