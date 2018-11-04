@@ -8,15 +8,18 @@ function getProjectManagerHTML(){
 	if ($_POST) {
 		// Execute code (such as database updates) here.
 		foreach ($_POST as $key => $value) {
-			if ($value!=-1){
-				global $connection;
+			global $connection;
+			if($value==-1){
+				$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=NULL WHERE ID=?");
+				$query->bind_param("i",intval(substr($key,9)));
+			} else {
 				$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=? WHERE ID=?");
 				$query->bind_param("ii",$value,intval(substr($key,9)));
-				if ($query->execute()) {
-				} else {
-					echo "Error while updating records!";
-				}
-				
+			}
+			
+			if ($query->execute()) {
+			} else {
+				echo "Error while updating records!";
 			}
 		}
 		// Redirect to this page.
@@ -44,7 +47,6 @@ function getProjectManagerHTML(){
 					WHERE NOT (n.txt='START' OR n.txt='FINISH') AND n.processID=".$curProcess[1]);
 			$innerhtml .= "<hr style='border-color:lightgrey'><h4><b>".$curProcess[0]."</b> (".$curProcess[2].")</h4><br>";
 			$innerhtml .= getTableHeader(array("ID","Task name","Profession","RACI","Authorized person"));
-			
 			for ($i=0; $i < count($rows)-1; $i++) {
 				$innerhtml.="<tr>";
 				$cells = explode(",",$rows[$i]);
@@ -61,21 +63,20 @@ function getProjectManagerHTML(){
 				$innerhtml.="<td>";
 				$professionID=$cells[5];
 				$ID = $cells[6];
-				if ($cells[4]==NULL) {
-					if (is_numeric($professionID)) {
-						$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
-						WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
-						$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value=\"-1\"> </option>";
-						for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
-							$values=explode(",",$avaliablePersonRows[$n]);
-							$innerhtml.='<option value='.$values[0].'>'.$values[1].'</option>';
-						}
-						$innerhtml.="</select>";
+				
+				$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
+				WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
+				$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value=\"-1\"> </option>";
+				for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
+					$values=explode(",",$avaliablePersonRows[$n]);
+					$innerhtml.='<option value='.$values[0];
+					if ($values[0]==$cells[4]){
+						$innerhtml.=" selected";
 					}
-				} else {
-					$personQuery=getRowsOfQuery("SELECT personName FROM persons WHERE ID=".$cells[4]);
-					$innerhtml.=$personQuery[0];
+					$innerhtml.='>'.$values[1].'</option>';
 				}
+				$innerhtml.="</select>";
+
 				$innerhtml.="</td></tr>";
 			}
 			$innerhtml .= "</tbody></table>";

@@ -109,7 +109,6 @@ function deleteSelected() {
 			//console.log(runInsert(["edgeDel",selectedEdge.ID]));
 			deleteEdge(selectedEdge);
 			selectedEdge=null;
-			redraw();
 			reviseInAndOutputs();
 		}
 	}
@@ -132,13 +131,14 @@ function deleteSelected() {
 			}
 			//deleting the node itself
 			//console.log(runInsert(["nodeDel",selectedNode.ID]));
-			let pos = getPosInArray(selectedNode.ID,nodes);
+			var pos = getPosInArray(selectedNode.ID,nodes);
 			nodes.splice(pos,1);
 			selectedNode=null;
-			redraw();
 			reviseInAndOutputs();
 		}
 	}
+	d3.select("#submitGraphButton").attr("class","btn btn-danger");
+	redraw();
 }
 
 //called if node status is changed
@@ -251,7 +251,8 @@ function getNodeData() {
 	let profession = selectEl.options[selectEl.selectedIndex].value;
 
 	selectEl = d3.select("#personSelect").node();
-	let resPerson = selectEl.options[selectEl.selectedIndex].value;
+	//let resPerson = selectEl.options[selectEl.selectedIndex].value;
+	let resPerson = null;
 
 	let duration = d3.select("#nodeDuration").node().value;
 	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
@@ -304,6 +305,7 @@ function createEdge() {
 					//checkForInput(a.toNodeID);
 					reviseInAndOutputs();
 					redraw();
+					d3.select("#submitGraphButton").attr("class","btn btn-danger");
 				}
 			}
 		}

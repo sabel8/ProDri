@@ -33,7 +33,7 @@ include(TEMPLATE.DS."header.php");
 		<?php
 		//user cannot delete nor overwrite the graph
 		if($_SESSION["auth"]!="u"){ echo '<button class="btn btn-default" onclick="deleteSelected()">Delete</button>
-		<button class="btn btn-default" onclick="submitGraphHome()">Submit graph</button>';} ?>
+		<button id="submitGraphButton" class="btn btn-default" onclick="submitGraphHome()">Submit graph</button>';} ?>
 		<br><br>
 	</div>
 
@@ -108,7 +108,7 @@ include(TEMPLATE.DS."header.php");
 				</div>
 				<div class="modal-footer">
 					<button style="float:left;" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-					<button style="float:right;" type="button" class="btn btn-primary" data-dismiss="modal" onclick="nodes.push(getNodeData());redraw();reviseInAndOutputs()">Create</button>
+					<button style="float:right;" type="button" class="btn btn-primary" data-dismiss="modal" onclick="nodes.push(getNodeData());redraw();reviseInAndOutputs();d3.select('#submitGraphButton').attr('class','btn btn-danger');">Create</button>
 				</div>
 			</div>
 

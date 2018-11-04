@@ -18,7 +18,7 @@ window.onload = function() {
 	var width = d3.select("#body").node().offsetWidth-40,
 	height = 400;
 
-	graphObj = new Graph(nodes,edges,false,"newNodeModalTrigger","objectInfoModalTrigger",false);
+	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
 	d3.select("#mainDiv").node().appendChild(graphObj.getSVGElement(width,height));
 	reviseInAndOutputs();
 	redraw();
@@ -74,7 +74,7 @@ function getPersonOfProfession(professionID){
 }
 
 function submitGraphHome() {
-	if (confirm("Are you sure you want to add this recommendation to this process? This action cannot be undone.")) {
+	if (confirm("Are you sure you want to overwrite this process? This action cannot be undone.")) {
 		//deleting all edges of the process
 		var xmlhttp = new XMLHttpRequest();
 		xmlhttp.open("POST", "php_functions/delete_data.php", false);

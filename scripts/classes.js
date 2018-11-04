@@ -425,7 +425,7 @@ class Graph{
 		var thisGraph = this;
 		
 		//clearing pathes to be able to redraw them
-		d3.selectAll("#edge").remove();
+		d3.selectAll("#graph path").remove();
 		
 		//clearing nodes to be able to redraw them
 		d3.select("#graph").selectAll("g").remove();
@@ -433,44 +433,41 @@ class Graph{
 		//iterating through the edge array and creating
 		//the corresponding SVG PATH elements (=arrows)
 		var edges = thisGraph.edges;
-		for(let i=0;i<edges.length;i++){
-			d3.select("#graph").append("path")
-			.attr("id",function(){return "edgeID"+edges[i].ID})
-			.attr("d",function(){
-				return getPath(edges[i]);
+		d3.select("#graph").selectAll("path")
+			.data(edges).enter().append("path")
+			.attr("id",function(d){return "edgeID"+d.ID})
+			.attr("d",function(d){
+				return getPath(d);
 			})
-			.attr("stroke",function(){
-				if (selectedEdge===edges[i])
+			.attr("stroke",function(d){
+				if (selectedEdge===d)
 					return "blue";
 				else
 					return "black";
 			})
 			.attr("stroke-width",edgeWidth)
-			.attr("marker-end",function(){
-				if (selectedEdge===edges[i])
+			.attr("marker-end",function(d){
+				if (selectedEdge===d)
 					return "url(#arrowheadSelected)";
 				else
 					return "url(#arrowhead)";
 			})
 			.on("mouseenter", function(){
-				d3.select(this).classed("hoverEdge",true)
-				.classed("selectedEdge",false)
-				.attr("marker-end","url(#arrowheadHover)")
+				d3.select(this).attr("class","hoverEdge")
+				.attr("marker-end","url(#arrowheadHover)");
 			})
-			.on("mouseleave", function(){
-				let d = edges[i];
+			.on("mouseleave", function(d){
 				if (selectedEdge===d) {
 					d3.select(this).classed("selectedEdge",true)
 					.attr("marker-end","url(#arrowheadSelected)");
 				} else {
-					d3.select(this).classed("hoverEdge",false)
-					.attr("marker-end","url(#arrowhead)")
+					d3.select(this).attr("class","")
+					.attr("marker-end","url(#arrowhead)");
 				}
 			})
 			//sets the selectedEdge variable and shows
 			//info modal if not selected
-			.on("click",function(){
-				let d = edges[i];
+			.on("click",function(d){
 				//hiding the status selector of the modal
 				d3.select("#statusSelect").style("display","none");
 	
@@ -490,8 +487,7 @@ class Graph{
 					d3.select("#objectInfoModalTrigger").node().click();
 				}
 				redraw();
-			});
-		}
+		});
 
 		//drawing nodes with d3 from the array
 		//in a separate g element which
@@ -526,7 +522,6 @@ class Graph{
 		})
 		.on("mouseup",function(d){shiftKeyPressed=false})
 		.on("click", function(d,i){
-			console.log("ott");
 			//changing status on ctrl+click
 			if (d3.event.ctrlKey) {
 				if (justSpectating){
@@ -690,6 +685,7 @@ function updateEdges(){
 		var curEdge = edges[i];
 		d3.select("#edgeID"+curEdge.ID).attr("d",function(){ return getPath(curEdge)});
 	}
+	d3.select("#new").remove();
 }
 
 function updateNodes(){
