@@ -5,6 +5,7 @@ function getTasks() {
 	xmlhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			taskArray = this.responseText.split(";");
+			console.log(this.responseText);
 			createTasksTable(taskArray);
 		}
 	};

@@ -28,8 +28,7 @@ if ($q=="nodes") {
 } else if ($q=="tasklist") {
 	$personName = $_REQUEST["n"];
 	global $connection;
-	$query = $connection->prepare("
-		SELECT n.ID, n.txt, n.status, n.duration, n.RACI, p.processName, projectName
+	$query = $connection->prepare("SELECT n.ID, n.txt, n.status, n.duration, n.RACI, p.processName, projectName
 		FROM nodes AS n
 		LEFT JOIN persons AS rp
 			ON n.responsiblePersonID=rp.ID 
@@ -60,8 +59,7 @@ if ($q=="nodes") {
 	global $connection;
 	
 	//getting the table column names
-	$query = $connection->prepare("
-		SELECT column_name
+	$query = $connection->prepare("SELECT column_name
 		FROM information_schema.columns
 		WHERE table_name='{$curLi}'");
 	confirm($query);
