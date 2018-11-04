@@ -39,8 +39,8 @@ if ($q=="insert") {
 			$query->bind_param("isiiiiiisiisiiiiiisi",$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10],$p[1],$p[2],$p[3],$p[4],$p[5],$p[6],$p[7],$p[8],$p[9],$p[10]);
 			break;
 		case "edges":
-			$query = $connection->prepare("INSERT INTO edges (ID,fromNodeID,toNodeID) VALUES (?,?,?) ON DUPLICATE KEY UPDATE ID=?,fromNodeID=?,toNodeID=?");
-			$query->bind_param("iiiiii",$p[1],$p[2],$p[3],$p[1],$p[2],$p[3]);
+			$query = $connection->prepare("INSERT INTO edges (fromNodeID,toNodeID,processID) VALUES (?,?,?)");
+			$query->bind_param("iii",$p[1],$p[2],$p[3]);
 			break;
 		case "edgeDel":
 			$query=$connection->prepare("DELETE FROM edges WHERE ID=?");

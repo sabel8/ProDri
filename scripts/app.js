@@ -85,6 +85,7 @@ function submitGraphHome() {
 			}
 		};//Send the proper header information along with the request
 		xmlhttp.send("q=deleteObjectsOfProcess&p="+curProcessID);
+		console.log(curProcessID);
 
 		var backupN = nodes, backupE=edges;
 		for (var i = 0; i < nodes.length; i++) {
@@ -94,8 +95,9 @@ function submitGraphHome() {
 		}
 		for (var i = 0; i < edges.length; i++) {
 			var c = edges[i]; //current edge
-			var params = ["edges",c.ID,c.fromNodeID,c.toNodeID];
+			var params = ["edges",c.fromNodeID,c.toNodeID,curProcessID];
 			console.log(runInsert(params));
 		}
+		location.reload(true);
 	}
 }
