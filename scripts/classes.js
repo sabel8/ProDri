@@ -356,7 +356,6 @@ class Graph{
 			.attr("width", width)
 			.attr("height", height)
 			.on("click",function(){
-				console.log("svg click")
 				mousePos = d3.mouse(svg);
 				if (shiftKeyPressed===true && thisGraph.allowedCreation===true) {
 					d3.select("#"+thisGraph.newNodeModalTriggerID).node().click();
@@ -632,7 +631,6 @@ class Graph{
 	//drag start, (creates if necessary and)
 	//draws a temporary edge
 	dragstarted(d) {
-		console.log("statr drag");
 		if (shiftKeyPressed===true) {
 			if (justSpectating==true){
 				alert("You are in spectating mode, you cannot create new edge.");
@@ -667,8 +665,6 @@ class Graph{
 			var draggedNode = getNodeByID(d.ID);
 			draggedNode.x += d3.event.dx;
 			draggedNode.y += d3.event.dy;
-			d3.select(this).attr("transform","translate("+draggedNode.x+","+draggedNode.y+")");
-			
 			updateEdges();
 			updateNodes();
 		}
@@ -697,7 +693,6 @@ function updateEdges(){
 }
 
 function updateNodes(){
-	console.log("friss");
 	for(var i=0;i<nodes.length;i++){
 		var curNode=nodes[i];
 		d3.select("#gNum"+curNode.ID).attr("transform","translate("+curNode.x+","+curNode.y+")");

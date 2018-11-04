@@ -12,7 +12,7 @@ function createRecommendation(){
 	var button = d3.select("#manageEditorBody").append("button")
 		.attr("type","button")
 		.attr("class","btn btn-primary")
-		.on("click",function(){submitGraph(1,4/*to be changed from static*/)})
+		.on("click",function(){submitGraph(1,4/*to be changed from static*/);})
 		.html("<span class='glyphicon glyphicon-ok'></span> Create recommendation");
 	graphObj.redraw();
 }
@@ -101,6 +101,7 @@ function removeRecommendation(recomID){
 }
 
 function submitPersonAssignment(){
+	var c = d3.select("#personSel");
 /*
 get all select element
 get their nodeID, personID and selected value

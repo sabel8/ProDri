@@ -3,6 +3,27 @@ require_once("config.php");
 include(TEMPLATE.DS."header.php");
 
 function getProjectManagerHTML(){
+	//if post is set, update database then clear post
+	//avoiding repetitive form submission
+	if ($_POST) {
+		// Execute code (such as database updates) here.
+		foreach ($_POST as $key => $value) {
+			if ($value!=-1){
+				global $connection;
+				$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=? WHERE ID=?");
+				$query->bind_param("ii",$value,intval(substr($key,9)));
+				if ($query->execute()) {
+				} else {
+					echo "Error while updating records!";
+				}
+				
+			}
+		}
+		// Redirect to this page.
+		header("Location: " . $_SERVER['REQUEST_URI']);
+		exit();
+	 }
+
 	$innerhtml="<h2><b>Vacant tasks</b></h2>";
 	$processes = getRowsOfQuery("SELECT processName,p.ID,projects.projectName FROM nodes n,processes p
 			LEFT JOIN projects ON projects.ID=p.projectID
@@ -11,16 +32,16 @@ function getProjectManagerHTML(){
 	
 	//creating a table if there is any vacant task
 	if(count($processes)>=2){
-		
+		$innerhtml .= "<form ".htmlspecialchars($_SERVER["PHP_SELF"])." method='post'>";
 		for ($j=0;$j<count($processes)-1;$j++){
 			$curProcess=explode(",",$processes[$j]);
-			$rows = getRowsOfQuery("SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci,prof.ID
+			$rows = getRowsOfQuery("SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci,n.responsiblePersonID,n.professionID,n.ID
 					FROM nodes n
 					LEFT JOIN professions prof 
 						ON n.professionID=prof.ID
 					LEFT JOIN processes p
 						ON n.processID=p.ID
-					WHERE n.processID=".$curProcess[1]);
+					WHERE NOT (n.txt='START' OR n.txt='FINISH') AND n.processID=".$curProcess[1]);
 			$innerhtml .= "<hr style='border-color:lightgrey'><h4><b>".$curProcess[0]."</b> (".$curProcess[2].")</h4><br>";
 			$innerhtml .= getTableHeader(array("ID","Task name","Profession","RACI","Authorized person"));
 			
@@ -28,7 +49,7 @@ function getProjectManagerHTML(){
 				$innerhtml.="<tr>";
 				$cells = explode(",",$rows[$i]);
 				//-1 because prof.ID is for dropdown list
-				for ($n=0; $n < count($cells)-1; $n++) {
+				for ($n=0; $n < count($cells)-3; $n++) {
 					if ($n==3) {
 						$txt=getRACItext($cells[3]);
 						$innerhtml.="<td>".$txt."</td>";
@@ -38,30 +59,39 @@ function getProjectManagerHTML(){
 				}
 
 				$innerhtml.="<td>";
-				if (is_numeric($cells[count($cells)-1])) {
-					$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
-					WHERE pe.professionID=pr.ID AND pr.ID=".$cells[count($cells)-1]);
-					$innerhtml.="<select style='width:100%'><option value=\"-1\"> </option>";
-					for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
-						$values=explode(",",$avaliablePersonRows[$n]);
-						$innerhtml.='<option value='.$values[0].'>'.$values[1].'</option>';
+				$professionID=$cells[5];
+				$ID = $cells[6];
+				if ($cells[4]==NULL) {
+					if (is_numeric($professionID)) {
+						$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
+						WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
+						$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value=\"-1\"> </option>";
+						for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
+							$values=explode(",",$avaliablePersonRows[$n]);
+							$innerhtml.='<option value='.$values[0].'>'.$values[1].'</option>';
+						}
+						$innerhtml.="</select>";
 					}
-					$innerhtml.="</select>";
+				} else {
+					$personQuery=getRowsOfQuery("SELECT personName FROM persons WHERE ID=".$cells[4]);
+					$innerhtml.=$personQuery[0];
 				}
+				
 				$innerhtml.="</td></tr>";
 				
 
 						
 			}
+			
 			$innerhtml .= "</tbody></table>";
-			$innerhtml .= "<div style='float:right'><button class='btn btn-success' type='submit' onclick='submitPersonAssignment()'>Assign persons</button></div>";
+			$innerhtml .= "<div style='float:right'><input type='submit' class='btn btn-success' value='Assign persons'></div>";
 			$innerhtml .= "</div>";
 		}
-
+		$innerhtml .= "</form>";
 	} else {
 		$innerhtml.= '<div class="alert alert-success">There isn\'t any vacant task!</div>';
 	}
-
+	
 	return $innerhtml;
 }
 

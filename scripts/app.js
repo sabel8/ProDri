@@ -32,7 +32,7 @@ function setupModal() {
 		//first element is ID
 		//second element is name
 		//third element is seniority
-		let curProf = professions[i].split(",");
+		var curProf = professions[i].split(",");
 		form += "<option value=\""+curProf[0]+"\">"+curProf[1]+" ("+curProf[2]+")"+"</option>";
 	}
 	d3.select("#professionSelect").node().innerHTML = form;
@@ -50,7 +50,7 @@ function professionChange(){
 		//first element is ID
 		//second element is name
 		//third element is seniority
-		let curPerson = persons[i].split(",");
+		var curPerson = persons[i].split(",");
 		form += "<option value=\""+curPerson[0]+"\">"+curPerson[1]+"</option>";
 	}
 	d3.select("#personSelect").node().innerHTML = form;
