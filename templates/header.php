@@ -93,7 +93,15 @@ if (isset($_GET["auth"])){
 					<?php if($_SESSION["auth"]!="u"){
 						echo '<li><a href="/prodri/editdatabase.php">Edit database</a></li>';
 					} ?>
-					<li><a href='/prodri/manage.php'>Manage recommendations</a></li>
+					<li><a href='/prodri/manage.php'>
+					<?php
+					if($_SESSION["auth"]=="pm"){
+						echo "Assignments";
+					} else {
+						echo "Manage recommendations";
+					}
+					?>
+					</a></li>
 			    </ul>
 			    <ul class="nav navbar-nav navbar-right">
 			    	<li>

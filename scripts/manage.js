@@ -100,17 +100,13 @@ function removeRecommendation(recomID){
 	location.reload(true);
 }
 
-function submitPersonAssignment(){
-	var c = d3.select("#personSel");
-/*
-get all select element
-get their nodeID, personID and selected value
-iterate
-	if personID not -1
-		check if personProfID=nodeProfID
-			runInsert (UPDATE nodes SET personID="personID" WHERE nodeID="nodeID")
-	else nothing
-end loop
-refresh
-*/
+function addNewRecNode(procID){
+	//x and y values are in mousePos variable
+	let x = mousePos[0];
+	let y = mousePos[1];
+	let taskName = d3.select("#nodeTitle").node().value;
+	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
+	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID){
+	nodes.push(new Node(getValidID(nodes),taskName,x,y,0,"","","","",procID));
+	redraw();
 }

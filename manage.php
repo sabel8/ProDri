@@ -2,6 +2,8 @@
 require_once("config.php");
 include(TEMPLATE.DS."header.php");
 
+$curProcess=1; //todo --> dynamic
+
 function getProjectManagerHTML(){
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
@@ -344,13 +346,6 @@ function getTableRecordRow($cells) {
 						<input type="text" id="nodeTitle" value="Example task 1">
 						<br><br>
 
-						Profession:<br>
-						<select id="professionSelect" onchange="professionChange()">
-						</select><br><br>
-
-						Duration:<br>
-						<input type="number" id="nodeDuration" value="7">
-						<br><br>
 						RACI:<br>
 						<div id="nodeRaci">
 							<input name="nodeRaci" id="raciR" type="radio" value="R" checked>
@@ -369,7 +364,8 @@ function getTableRecordRow($cells) {
 				</div>
 				<div class="modal-footer">
 					<button style="float:left;" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-					<button id="createNodeButton" style="float:right;" type="button" class="btn btn-primary" data-dismiss="modal">Create</button>
+					<button id="createNodeButton" style="float:right;" type="button" class="btn btn-primary"
+					 onclick="addNewRecNode(<?php echo $curProcess?>)" data-dismiss="modal">Create</button>
 				</div>
 			</div>
 
