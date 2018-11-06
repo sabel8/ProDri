@@ -66,15 +66,9 @@ if ($_POST) {
         $innerhtml.="<td>";
         switch ($n) {
           case 3:
-            if ($curTask[3] != NULL){
-              $innerhtml.=$curTask[3];
-            } else {
-              $innerhtml.=
-              '<form action="'.htmlspecialchars($_SERVER["PHP_SELF"]).'" method="post">
-                <input type="number" name="taskDur'.$curTask[count($curTask)-1].'" min="1" value="1">
-                <input type="submit" class="btn btn-default" value="Submit">
-              </form>';
-            }
+            $innerhtml.='<form action="'.htmlspecialchars($_SERVER["PHP_SELF"]).'" method="post">'.
+                '<input type="number" name="taskDur'.$curTask[count($curTask)-1].'" min="1" value="'.($curTask[3]==NULL?"1":$curTask[3]).'">'.
+                ' <input type="submit" class="btn btn-default" value="Submit"></form>';
             break;
           case 4:
             $innerhtml.=getRACItext($curTask[4]);

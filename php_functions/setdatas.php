@@ -98,6 +98,34 @@ if ($q=="insert") {
 				WHERE r.recommendationID=?");
 			$query->bind_param("i",$p[1]);
 			break;
+		case "wipeWithdrawNodes":
+			$query = $connection->prepare("DELETE FROM withdraw_nodes WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "wipeWithdrawEdges":
+			$query = $connection->prepare("DELETE FROM withdraw_edges WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "copyNodesToWithdraw":
+			//p[1] = recomID
+			$query = $connection->prepare("INSERT withdraw_nodes (SELECT * FROM nodes 
+				WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?))");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "copyEdgesToWithdraw":
+			//p[1] = recomID
+			$query = $connection->prepare("INSERT withdraw_edges (SELECT * FROM edges 
+				WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?))");
+			$query->bind_param("i",$p[1]);
+			break;
+		case "allRecNotLive":
+			$query = $connection->prepare("UPDATE recommendations r SET isLive=0");
+			break;
+		case "makeRecLive":
+			//p[1] = recomID
+			$query = $connection->prepare("UPDATE recommendations r SET isLive=1 WHERE ID=?");
+			$query->bind_param("i",$p[1]);
+			break;
 	}
 	confirm($query);
 	if ($query->execute()) {
@@ -125,7 +153,7 @@ if ($q=="insert") {
 
 } else if ($q=="recomStatusChange"){
 	global $connection;
-	$query = $connection->prepare("UPDATE recommendations SET status=? WHERE ID=?");
+	$query = $connection->prepare("UPDATE recommendations SET status=?,isLive=0 WHERE ID=?");
 
 	confirm($query);
 	$query->bind_param('ii',$_POST["to"],$_POST["p"]);
@@ -157,6 +185,42 @@ if ($q=="insert") {
 		
 	} else {
 	    echo "Error while updating record!";
+	}
+
+
+
+} else if ($_POST["q"]=="withdraw") {
+	global $connection;
+	$recomID = $_POST["p"];
+	$query = $connection->prepare("DELETE FROM nodes WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+	$query->bind_param("i",$recomID);
+	if ($query->execute()) {
+		echo "Recommendation nodes deleted successfully!";
+		$query = $connection->prepare("INSERT INTO nodes (SELECT * FROM withdraw_nodes 
+		WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?))");
+		$query->bind_param("i",$recomID);
+		if ($query->execute()) {
+			$query = $connection->prepare("DELETE FROM edges 
+			WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
+			$query->bind_param("i",$recomID);
+			if ($query->execute()) {
+				$query = $connection->prepare("INSERT INTO edges (SELECT * FROM withdraw_edges 
+				WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?))");
+				$query->bind_param("i",$recomID);
+				if ($query->execute()) {
+					echo "full success";
+				} else {
+					echo "last error";
+				}
+
+			} else {
+				echo "error2";
+			}
+		} else {
+			echo "Error1";
+		}
+	} else {
+	    echo "Error while recommendation nodes deletion!";
 	}
 }
 ?>

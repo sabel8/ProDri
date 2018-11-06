@@ -96,8 +96,7 @@ function getProjectManagerHTML(){
 function getProcessOwnerHTML(){
 	$innerhtml="<h3>Submitted recommendations</h3>";
 
-	$rows = getRowsOfQuery("
-		SELECT r.ID,p.personName,r.status,pr.processName
+	$rows = getRowsOfQuery("SELECT r.ID,p.personName,r.status,pr.processName,r.isLive
 		FROM recommendations r, persons p, processes pr
 		WHERE r.submitterPersonID=p.ID AND r.forProcessID=pr.ID AND NOT r.status=0");
 
@@ -109,15 +108,20 @@ function getProcessOwnerHTML(){
 			$cells = explode(",",$rows[$i]);
 
 			$innerhtml.=getTableRecordRow($cells);
-
+			$innerhtml.="<td class='text-center'>";
 			if ($cells[2]==1) {
-				$innerhtml.="<td class='text-center'>
-				<button class='btn btn-success' type='button' onclick='changeRecommendationStatus({$cells[0]},2)'>Accept</button>
-				<button class='btn btn-danger' type='button' onclick='changeRecommendationStatus({$cells[0]},3)'>Refuse</button>
-				</td></tr>";
+				$innerhtml.="
+				<button class='btn btn-success' type='button'
+				 onclick='event.stopPropagation();changeRecommendationStatus({$cells[0]},2)'>Accept</button>
+				<button class='btn btn-danger' type='button'
+				 onclick='event.stopPropagation();changeRecommendationStatus({$cells[0]},3)'>Refuse</button>";
+			} else if ($cells[2]==2 && $cells[4]==1) {
+				$innerhtml.="
+				<button class='btn btn-primary' type='button' onclick='event.stopPropagation();withdraw({$cells[0]});changeRecommendationStatus({$cells[0]},1)'>Withdraw</button>";
 			} else {
-				$innerhtml.= "<td class='text-center'><i>You have already chosen the fate of this recommendation. Thank you!</i></td></tr>";
+				$innerhtml.= "<i>This recommendation is ".getStatusName($cells[2])."</i>";
 			}
+			$innerhtml.="</td></tr>";
 		}
 		$innerhtml .= "</tbody></table></div>";
 	} else {
@@ -135,7 +139,8 @@ function getUserHTML($username){
 		</button><br><br>';
 
 	//getting the recommendations of the user
-	$query = $connection->prepare("SELECT r.ID,pr.processName,r.status FROM recommendations r, processes pr 
+	$query = $connection->prepare("SELECT r.ID,pr.processName,r.status,r.isLive
+		FROM recommendations r, processes pr 
 		WHERE r.submitterPersonID=(SELECT ID FROM persons WHERE personName=?) AND pr.ID=r.forProcessID");
 	$query->bind_param('s',$username);
 	confirm($query);
@@ -254,7 +259,7 @@ function getTableRecordRow($cells) {
 	$colorClass=getColorClass($cells[2]);
 
 	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}])\">";
-	for ($n=0;$n < count($cells);$n++){
+	for ($n=0;$n < count($cells)-1;$n++){
 		$innerhtml.='<td class="text-center">';
 		switch($n){
 			case 2:

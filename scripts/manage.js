@@ -43,6 +43,18 @@ function submitGraph(processID,personID) {
 	location.reload(true);
 }
 
+function withdraw(recomID){
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.open("POST", "php_functions/setdatas.php", false);
+	xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			console.log(this.responseText);
+		}
+	};
+	xmlhttp.send("q=withdraw&p="+recomID);
+}
+
 function viewRecommendation(recID,recNodes,recEdges) {
 	//nodes cons(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID)
 	var realNodes=[];
@@ -58,13 +70,22 @@ function viewRecommendation(recID,recNodes,recEdges) {
 	}
 	d3.select("#manageEditorBody").html("");
 	graphObj = new Graph(realNodes,realEdges,false,"newNodeModalTrigger","objectInfoModalTrigger",true);
+	d3.select("#manageEditorBody").append("button")
+		.attr("id","closeSVGButton")
+		.attr("style","float:right;margin-bottom:20px")
+		.on("click",function(){
+			d3.select("#closeSVGButton").remove();
+			d3.select("svg").remove();
+		})
+		.attr("class","btn btn-danger")
+		.html('<span class="glyphicon glyphicon-remove"></span>');
 	var parent = d3.select("#manageEditorBody").node();
+	parent.appendChild(document.createElement('br'));
 	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
 	redraw();
 }
 
 function changeRecommendationStatus(recomID,status) {
-	console.log(recomID);
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.open("POST", "php_functions/setdatas.php", false);
 	xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
@@ -73,15 +94,26 @@ function changeRecommendationStatus(recomID,status) {
 			console.log(this.responseText);
 			switch(status) {
 				case 1:
-					alert("You successfully submitted your recommendation. Thank you!");
+					//alert("You successfully submitted your recommendation. Thank you!");
 					break;
+				//ACCEPT BUTTON
 				case 2:
+					//setting up backup withdraw table data
+					console.log(runInsert(["wipeWithdrawNodes",recomID]));
+					console.log(runInsert(["wipeWithdrawEdges",recomID]));
+					console.log(runInsert(["copyNodesToWithdraw",recomID]));
+					console.log(runInsert(["copyEdgesToWithdraw",recomID]));
+
+					//making the recommendation live
 					console.log(runInsert(["nodeProcDel",recomID]));
 					console.log(runInsert(["nodeRecToLive",recomID]));
 					console.log(runInsert(["edgeProcDel",recomID]));
 					console.log(runInsert(["edgeRecToLive",recomID]));
+					console.log(runInsert(["allRecNotLive"]));
+					console.log(runInsert(["makeRecLive",recomID]));
 					alert("You successfully accepted this recommendation and made it official. Thank you!");
 					break;
+				//REFUSE BUTTON	
 				case 3:
 					alert("You successfully refused this recommendation. Thank you!");
 					break;
@@ -102,10 +134,10 @@ function removeRecommendation(recomID){
 
 function addNewRecNode(procID){
 	//x and y values are in mousePos variable
-	let x = mousePos[0];
-	let y = mousePos[1];
-	let taskName = d3.select("#nodeTitle").node().value;
-	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
+	var x = mousePos[0];
+	var y = mousePos[1];
+	var taskName = d3.select("#nodeTitle").node().value;
+	var raci = document.querySelector('input[name="nodeRaci"]:checked').value;
 	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID){
 	nodes.push(new Node(getValidID(nodes),taskName,x,y,0,"","","","",procID));
 	redraw();
