@@ -55,7 +55,8 @@ function withdraw(recomID){
 	xmlhttp.send("q=withdraw&p="+recomID);
 }
 
-function viewRecommendation(recID,recNodes,recEdges) {
+function viewRecommendation(recID,recNodes,recEdges,tableID) {
+	closeGraph();
 	//nodes cons(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID)
 	var realNodes=[];
 	for (var i = 0; i < recNodes.length; i++) {
@@ -68,21 +69,32 @@ function viewRecommendation(recID,recNodes,recEdges) {
 		var c = recEdges[i];
 		realEdges[i]=new Edge(Number(c[0]),Number(c[1]),Number(c[2]));
 	}
-	d3.select("#manageEditorBody").html("");
 	graphObj = new Graph(realNodes,realEdges,false,"newNodeModalTrigger","objectInfoModalTrigger",true);
-	d3.select("#manageEditorBody").append("button")
+	var closeButton=document.createElement("button");
+	d3.select(closeButton)
 		.attr("id","closeSVGButton")
 		.attr("style","float:right;margin-bottom:20px")
 		.on("click",function(){
-			d3.select("#closeSVGButton").remove();
-			d3.select("svg").remove();
+			closeGraph();
 		})
 		.attr("class","btn btn-danger")
 		.html('<span class="glyphicon glyphicon-remove"></span>');
-	var parent = d3.select("#manageEditorBody").node();
-	parent.appendChild(document.createElement('br'));
-	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
+	var parent = d3.select("#"+tableID).node().parentNode;
+	//someElement.parentNode.insertBefore(newElement, someElement.nextSibling);
+	console.log("tablename: "+tableID);
+	insertAfter(closeButton , d3.select("#manageEditorBody").node());
+	insertAfter(graphObj.getSVGElement(parent.offsetWidth,400) , d3.select("#closeSVGButton").node());
+	//insertAfter(document.createElement('br') , d3.select("#"+tableID).node());
 	redraw();
+}
+
+function closeGraph(){
+	d3.select("#closeSVGButton").remove();
+	d3.select("svg").remove();
+}
+
+function insertAfter(newNode, referenceNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
 }
 
 function changeRecommendationStatus(recomID,status) {

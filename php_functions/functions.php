@@ -45,10 +45,11 @@ function getRowsOfQuery($queryTxt){
 }
 
 //returns the header of the table, and opened body tag
+//must be closed with </tbody></table></div> !
 //param $arr = array of the columns' name
-function getTableHeader($arr){
+function getTableHeader($arr,$id){
 	$innerhtml = '<div class="table-responsive">
-			<table class="table table-bordered table-hover">
+			<table id="'.$id.'" class="table table-bordered table-hover">
 				<thead><tr>';
 	for ($i=0; $i < count($arr); $i++) { 
 		$innerhtml.='<th class="text-center">'.$arr[$i].'</th>';

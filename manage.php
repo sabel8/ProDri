@@ -8,15 +8,21 @@ function getProjectManagerHTML(){
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
 	if ($_POST) {
+		print_r($_POST);
 		// Execute code (such as database updates) here.
 		foreach ($_POST as $key => $value) {
 			global $connection;
-			if($value==-1){
-				$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=NULL WHERE ID=?");
-				$query->bind_param("i",intval(substr($key,9)));
-			} else {
-				$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=? WHERE ID=?");
-				$query->bind_param("ii",$value,intval(substr($key,9)));
+			if (substr($key,0,9)=="personSel") {
+				if($value==-1){
+					$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=NULL WHERE ID=?");
+					$query->bind_param("i",intval(substr($key,9)));
+				} else {
+					$query = $connection->prepare("UPDATE nodes SET responsiblePersonID=? WHERE ID=?");
+					$query->bind_param("ii",$value,intval(substr($key,9)));
+				}
+			} else if(substr($key,0,10)=="priorityOf") {
+				$query=$connection->prepare("UPDATE nodes SET priority=? WHERE ID=?");
+				$query->bind_param("ii",$value,intval(substr($key,10)));
 			}
 			
 			if ($query->execute()) {
@@ -27,7 +33,7 @@ function getProjectManagerHTML(){
 		// Redirect to this page.
 		header("Location: " . $_SERVER['REQUEST_URI']);
 		exit();
-	 }
+	}
 
 	$innerhtml="<h2><b>Vacant tasks</b></h2>";
 	$processes = getRowsOfQuery("SELECT processName,p.ID,projects.projectName FROM nodes n,processes p
@@ -40,7 +46,8 @@ function getProjectManagerHTML(){
 		$innerhtml .= "<form action='".htmlspecialchars($_SERVER["PHP_SELF"])."' method='post'>";
 		for ($j=0;$j<count($processes)-1;$j++){
 			$curProcess=explode(",",$processes[$j]);
-			$rows = getRowsOfQuery("SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci,n.responsiblePersonID,n.professionID,n.ID
+			$rows = getRowsOfQuery("SELECT n.nodeID,n.txt,concat(professionName,' (',seniority,')'),n.raci
+			,n.responsiblePersonID,n.professionID,n.ID,n.priority
 					FROM nodes n
 					LEFT JOIN professions prof 
 						ON n.professionID=prof.ID
@@ -48,12 +55,12 @@ function getProjectManagerHTML(){
 						ON n.processID=p.ID
 					WHERE NOT (n.txt='START' OR n.txt='FINISH') AND n.processID=".$curProcess[1]);
 			$innerhtml .= "<hr style='border-color:lightgrey'><h4><b>".$curProcess[0]."</b> (".$curProcess[2].")</h4><br>";
-			$innerhtml .= getTableHeader(array("ID","Task name","Profession","RACI","Authorized person"));
+			$innerhtml .= getTableHeader(array("ID","Task name","Profession","RACI","Authorized person","Priority"),"editProcess".$curProcess[1]);
 			for ($i=0; $i < count($rows)-1; $i++) {
 				$innerhtml.="<tr>";
 				$cells = explode(",",$rows[$i]);
 				//-1 because prof.ID is for dropdown list
-				for ($n=0; $n < count($cells)-3; $n++) {
+				for ($n=0; $n < count($cells)-4; $n++) {
 					if ($n==3) {
 						$txt=getRACItext($cells[3]);
 						$innerhtml.="<td>".$txt."</td>";
@@ -66,6 +73,7 @@ function getProjectManagerHTML(){
 				$professionID=$cells[5];
 				$ID = $cells[6];
 				
+				//getting and setting up the person(s selection) for the tasks
 				$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
 				WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
 				$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value=\"-1\"> </option>";
@@ -77,12 +85,17 @@ function getProjectManagerHTML(){
 					}
 					$innerhtml.='>'.$values[1].'</option>';
 				}
-				$innerhtml.="</select>";
+				$innerhtml.="</select></td>";
 
-				$innerhtml.="</td></tr>";
+				$priorityValuesRows=getRowsOfQuery("SELECT n.priority FROM nodes n WHERE n.ID=".$cells[6]);
+				$innerhtml.="<td><input style='width:50px' type='number' name='priorityOf".$cells[6]."'min='0'";
+				if ($cells[7]!=""){
+					$innerhtml.="value='".$cells[7]."'";
+				}
+				$innerhtml.="></tr>";
 			}
 			$innerhtml .= "</tbody></table>";
-			$innerhtml .= "<div style='float:right'><input type='submit' class='btn btn-success' value='Assign persons'></div>";
+			$innerhtml .= "<input type='submit' style='float:right' class='btn btn-success' value='Confirm changes'>";
 			$innerhtml .= "</div>";
 		}
 		$innerhtml .= "</form>";
@@ -94,6 +107,7 @@ function getProjectManagerHTML(){
 }
 
 function getProcessOwnerHTML(){
+	//recommendations
 	$innerhtml="<h3>Submitted recommendations</h3>";
 
 	$rows = getRowsOfQuery("SELECT r.ID,p.personName,r.status,pr.processName,r.isLive
@@ -102,12 +116,12 @@ function getProcessOwnerHTML(){
 
 	//creating a table if the user has any recommendation
 	if(count($rows)>=2){
-		$innerhtml .= getTableHeader(array("ID","Submitter person","Status","Process name","Judgement"));
+		$innerhtml .= getTableHeader(array("ID","Submitter person","Status","Process name","Judgement"),"recsTable");
 		for ($i=0; $i < count($rows)-1; $i++) {
 
 			$cells = explode(",",$rows[$i]);
 
-			$innerhtml.=getTableRecordRow($cells);
+			$innerhtml.=getTableRecordRow($cells,"recsTable");
 			$innerhtml.="<td class='text-center'>";
 			if ($cells[2]==1) {
 				$innerhtml.="
@@ -123,10 +137,104 @@ function getProcessOwnerHTML(){
 			}
 			$innerhtml.="</td></tr>";
 		}
-		$innerhtml .= "</tbody></table></div>";
+		$innerhtml .= "</tbody></table><div id='manageEditorBody'></div></div>";
 	} else {
 		$innerhtml.= '<div class="alert alert-warning">There isn\'t any recommendations for you to review!</div>';
 	}
+
+	//TASK MANAGING TABLE
+	//if post is set, update database then clear post
+	//avoiding repetitive form submission
+	if ($_POST) {
+		print_r($_POST);
+		// Execute code (such as database updates) here.
+		foreach ($_POST as $key => $value) {
+			global $connection;
+			if (substr($key,0,4)=="raci") {
+				if($value==-1){
+					$query = $connection->prepare("UPDATE nodes SET raci=NULL WHERE ID=?");
+					$query->bind_param("i",intval(substr($key,4)));
+				} else {
+					$query = $connection->prepare("UPDATE nodes SET raci=? WHERE ID=?");
+					$query->bind_param("si",$value,intval(substr($key,4)));
+				}
+			} else if(substr($key,0,12)=="professionOf") {
+				if ($value==-1) {
+					$query=$connection->prepare("UPDATE nodes SET professionID=NULL,responsiblePersonID=NULL WHERE ID=?");
+					$query->bind_param("i",intval(substr($key,12)));
+				} else {
+					$query=$connection->prepare("UPDATE nodes SET professionID=? WHERE ID=?");
+					$query->bind_param("ii",$value,intval(substr($key,12)));
+				}
+			}
+			
+			if ($query->execute()) {
+				echo mysqli_error($connection);
+			} else {
+				echo "Error while updating records!";
+			}
+		}
+		// Redirect to this page.
+		header("Location: " . $_SERVER['REQUEST_URI']);
+		exit();
+	}
+
+
+	$innerhtml.="<hr style='border-color:lightgrey'><h3>Manage current tasks</h3>";
+	$tasksRow = getRowsOfQuery("SELECT nodeID,txt,professionID,raci,processName,n.ID FROM nodes n, processes p WHERE n.processID=p.ID");
+	if(count($tasksRow)>=2){
+		$innerhtml .= "<form action='".htmlspecialchars($_SERVER["PHP_SELF"])."' method='post'>";
+		$innerhtml.=getTableHeader(array("ID","Task name","Profession","RACI","Process name"),"tasksTable");
+		$professionRow = getRowsOFQuery("SELECT ID,concat(professionName,' (',seniority,')') from professions");
+		for($i=0;$i<count($tasksRow)-1;$i++) {
+			$cells=explode(",",$tasksRow[$i]);
+			$innerhtml.="<tr>";
+			//-1 because ID column is not needed
+			for($n=0;$n<count($cells)-1;$n++){
+				$innerhtml.="<td>";
+				switch($n){
+					//getting the profession and the seniority
+					case 2:
+						
+						//$innerhtml .= explode(",",$professionRow[0])[0];
+						if ($cells[1]!="START" and $cells[1]!="FINISH") {
+							$innerhtml.="<select name='professionOf".$cells[5]."'>";
+							$innerhtml.="<option value='-1'></option>";
+							//getting all professions and putting into option elements
+							for($j=0;$j<count($professionRow)-1;$j++){
+								$prof=explode(",",$professionRow[$j]);
+								$selected=$cells[2]==$prof[0]?" selected":"";
+								$innerhtml.="<option value='".$prof[0]."'".$selected.">".$prof[1]."</option>";
+							}
+							$innerhtml.="</select>";
+						}
+						break;
+					case 3:
+						if ($cells[1]!="START" and $cells[1]!="FINISH") {
+							$innerhtml.="<select name='raci".$cells[5]."'>";
+							$innerhtml.="<option value='-1'></option>";
+							$innerhtml.=getRACIoption($cells[3],"r");
+							$innerhtml.=getRACIoption($cells[3],"a");
+							$innerhtml.=getRACIoption($cells[3],"c");
+							$innerhtml.=getRACIoption($cells[3],"i");
+							$innerhtml.="</select>";
+						}
+						break;
+					default:
+						$innerhtml.=$cells[$n];
+				}
+				$innerhtml.="</td>";
+			}
+			$innerhtml.="</tr>";
+		}
+		$innerhtml .= "</tbody></table>";
+		$innerhtml .= "<input type='submit' style='float:right' class='btn btn-success' value='Confirm'></div>";
+		$innerhtml .= "</form>";
+	} else {
+		$innerhtml.= '<div class="alert alert-warning">There isn\'t any recommendations for you to review!</div>';
+	}
+
+
 	return $innerhtml;
 }
 
@@ -153,7 +261,7 @@ function getUserHTML($username){
 	$rows = explode(";", $res);
 	//creating a table if the user has any recommendation
 	if(count($rows)>=2){
-		$innerhtml.=getTableHeader(array("ID","For process","Status","Submit"));
+		$innerhtml.=getTableHeader(array("ID","For process","Status","Submit"),"userRecs");
 
 		//getting the nodes and edges for every recommendation
 		for ($i=0; $i < count($rows)-1; $i++) {
@@ -161,7 +269,7 @@ function getUserHTML($username){
 			$cells = explode(",",$rows[$i]);
 			//query for getting the nodes of the recommendation
 
-			$innerhtml.=getTableRecordRow($cells);
+			$innerhtml.=getTableRecordRow($cells,"userRecs");
 
 			//defining the buttons
 			if ($cells[2]==0) {
@@ -172,7 +280,7 @@ function getUserHTML($username){
 			$innerhtml.=" <button class='btn btn-danger' type='button' onclick='removeRecommendation({$cells[0]})'>Remove</button></td></tr>";
 		}
 
-		$innerhtml .= "</tbody></table></div>";
+		$innerhtml .= "</tbody></table><div id='manageEditorBody'></div></div>";
 
 	} else {
 		$innerhtml.= '<div class="alert alert-danger">You have not created any recommendations yet!</div>';
@@ -223,7 +331,7 @@ function getColorClass($status) {
 //returns the html of a recommendation row
 //on click the preview shows up
 //param $cells = array of the values intable cells
-function getTableRecordRow($cells) {
+function getTableRecordRow($cells,$tableID) {
 	$innerhtml="";
 	global $connection;
 	//query for getting the nodes of the recommendation
@@ -258,7 +366,7 @@ function getTableRecordRow($cells) {
 
 	$colorClass=getColorClass($cells[2]);
 
-	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}])\">";
+	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}],'$tableID')\">";
 	for ($n=0;$n < count($cells)-1;$n++){
 		$innerhtml.='<td class="text-center">';
 		switch($n){
@@ -271,6 +379,11 @@ function getTableRecordRow($cells) {
 		$innerhtml.="</td>";
 	}
 	return $innerhtml;
+}
+
+function getRACIoption($cell,$raci){
+	$selected = strtolower($cell)==$raci?" selected":"";
+	return "<option value='".$raci."'".$selected.">".getRACItext($raci)."</option>";
 }
 
 ?>
@@ -304,8 +417,6 @@ function getTableRecordRow($cells) {
 		}
 		echo $innerhtml;
 		?>
-
-		<div id="manageEditorBody"></div>
 	</div>
 
 	<a id="objectInfoModalTrigger" style="display: none" data-toggle="modal" href="#objectInfoModal"></a>
