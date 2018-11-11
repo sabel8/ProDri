@@ -126,6 +126,27 @@ if ($q=="insert") {
 			$query = $connection->prepare("UPDATE recommendations r SET isLive=1 WHERE ID=?");
 			$query->bind_param("i",$p[1]);
 			break;
+		case "log":
+			//p[1] = typeID
+			//p[2] = recomID
+			if ($p[1]==16){
+				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
+				VALUES (16, 2, (SELECT concat(personName,' recommended a new process, please review it.') 
+				FROM persons p,recommendations r WHERE p.ID=r.submitterPersonID AND r.ID=?), ?);");
+				$query->bind_param("ii",$p[2],$p[2]);
+			} else if($p[1]==17) {
+				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
+				VALUES (17,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was approved by PO.') 
+				FROM processes p, recommendations r,persons per 
+				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),?)");
+				$query->bind_param("ii",$p[2],$p[2]);
+			} else if($p[1]==18){
+				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
+				VALUES (18,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was declined by PO.') 
+				FROM processes p, recommendations r,persons per 
+				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),?)");
+				$query->bind_param("ii",$p[2],$p[2]);
+			}
 	}
 	confirm($query);
 	if ($query->execute()) {

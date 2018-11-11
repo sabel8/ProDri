@@ -1,22 +1,6 @@
 var openedCreator=false;
 var graphObj;
 
-function createRecommendation(){
-	getNodesAndEdges(1);//todo --> dinamic
-	openedCreator=true;
-	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
-	reviseInAndOutputs();
-	d3.select("#manageEditorBody").html("");
-	var parent = d3.select("#manageEditorBody").node();
-	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
-	var button = d3.select("#manageEditorBody").append("button")
-		.attr("type","button")
-		.attr("class","btn btn-primary")
-		.on("click",function(){submitGraph(1,4/*to be changed from static*/);})
-		.html("<span class='glyphicon glyphicon-ok'></span> Create recommendation");
-	graphObj.redraw();
-}
-
 function submitGraph(processID,personID) {
 	var recomID;
 	var xmlhttp = new XMLHttpRequest();
@@ -81,14 +65,15 @@ function viewRecommendation(recID,recNodes,recEdges,tableID) {
 		.html('<span class="glyphicon glyphicon-remove"></span>');
 	var parent = d3.select("#"+tableID).node().parentNode;
 	//someElement.parentNode.insertBefore(newElement, someElement.nextSibling);
-	console.log("tablename: "+tableID);
-	insertAfter(closeButton , d3.select("#manageEditorBody").node());
+	console.log("param tablename: "+tableID);
+	insertAfter(closeButton , parent);
 	insertAfter(graphObj.getSVGElement(parent.offsetWidth,400) , d3.select("#closeSVGButton").node());
 	//insertAfter(document.createElement('br') , d3.select("#"+tableID).node());
 	redraw();
 }
 
 function closeGraph(){
+	d3.select("#createRecButton").remove()
 	d3.select("#closeSVGButton").remove();
 	d3.select("svg").remove();
 }
@@ -98,6 +83,11 @@ function insertAfter(newNode, referenceNode) {
 }
 
 function changeRecommendationStatus(recomID,status) {
+	//refuse button deletes row
+	if(status==3){
+		removeRecommendation(recomID);
+		return;
+	}
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.open("POST", "php_functions/setdatas.php", false);
 	xmlhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
@@ -105,7 +95,9 @@ function changeRecommendationStatus(recomID,status) {
 		if (this.readyState == 4 && this.status == 200) {
 			console.log(this.responseText);
 			switch(status) {
+				//SUBMIT BUTTON
 				case 1:
+					console.log(runInsert(["log",16,recomID]));
 					//alert("You successfully submitted your recommendation. Thank you!");
 					break;
 				//ACCEPT BUTTON
@@ -115,6 +107,7 @@ function changeRecommendationStatus(recomID,status) {
 					console.log(runInsert(["wipeWithdrawEdges",recomID]));
 					console.log(runInsert(["copyNodesToWithdraw",recomID]));
 					console.log(runInsert(["copyEdgesToWithdraw",recomID]));
+					console.log(runInsert(["log",17,recomID]));
 
 					//making the recommendation live
 					console.log(runInsert(["nodeProcDel",recomID]));
@@ -125,10 +118,6 @@ function changeRecommendationStatus(recomID,status) {
 					console.log(runInsert(["makeRecLive",recomID]));
 					alert("You successfully accepted this recommendation and made it official. Thank you!");
 					break;
-				//REFUSE BUTTON	
-				case 3:
-					alert("You successfully refused this recommendation. Thank you!");
-					break;
 			}
 		}
 	};
@@ -138,6 +127,7 @@ function changeRecommendationStatus(recomID,status) {
 }
 
 function removeRecommendation(recomID){
+	console.log(runInsert(["log",18,recomID]));
 	console.log(runInsert(["recNodeDel",recomID]));
 	console.log(runInsert(["recEdgeDel",recomID]));
 	console.log(runInsert(["recDel",recomID]));
@@ -153,4 +143,74 @@ function addNewRecNode(procID){
 	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID){
 	nodes.push(new Node(getValidID(nodes),taskName,x,y,0,"","","","",procID));
 	redraw();
+}
+
+function createRecommendation2(nodesParam,edgesParam,processID){
+	//setting up the global node array
+	nodes = [];
+	//nodeParam(nodeID,txt,x,y,raci,processID,desc)
+	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
+	for(var i=0;i<nodesParam.length;i++){
+		var cur=nodesParam[i];
+		nodes[i]=new Node(Number(cur[0]),cur[1],Number(cur[2]),Number(cur[3]),0,null,null,null,cur[4],cur[5],cur[6]);
+	}
+
+	//setting up the global edge array
+	edges=[];
+	for(var i=0;i<edgesParam.length;i++){
+		var cur=edgesParam[i];
+		edges[i] = new Edge(cur[0],cur[1],cur[2]);
+	}
+
+
+	closeGraph();
+	openedCreator=true;
+	//constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpectate)
+	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
+	reviseInAndOutputs();
+	d3.select("#manageEditorBody").html("<br>");
+	var parent = d3.select("#manageEditorBody").node();
+	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
+	d3.select("#manageEditorBody").append("button")
+		.attr("id","createRecButton")
+		.attr("type","button")
+		.attr("class","btn btn-success")
+		.on("click",function(){submitGraph(processID,4);})//change to dynamic
+		.html("<span class='glyphicon glyphicon-ok'></span> Create recommendation");
+	graphObj.redraw();
+}
+
+function viewRec2(nodesParam,edgesParam,recomID,status,allowedCreation,spectateMode,tableID){
+	//setting up the global node array
+	nodes = [];
+	//nodeParam(nodeID,txt,x,y,raci,processID,desc)
+	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
+	for(var i=0;i<nodesParam.length;i++){
+		var cur=nodesParam[i];
+		nodes[i]=new Node(Number(cur[0]),cur[1],Number(cur[2]),Number(cur[3]),0,null,null,null,cur[4],cur[5],cur[6]);
+	}
+
+	//setting up the global edge array
+	edges=[];
+	for(var i=0;i<edgesParam.length;i++){
+		var cur=edgesParam[i];
+		edges[i] = new Edge(cur[0],cur[1],cur[2]);
+	}
+
+	//setting up the graph element and the svg
+	graphObj = new Graph(nodes,edges,allowedCreation,"newNodeModalTrigger","objectInfoModalTrigger",spectateMode);
+	reviseInAndOutputs();
+	d3.select("#manageEditorBody").html("<br>");
+	console.log(tableID);
+	var parent = d3.select("#manageEditorBody").node();
+	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
+	if (status==0){
+		d3.select("#manageEditorBody").append("button")
+		.attr("type","submit")
+		.attr("class","btn btn-primary")
+		.on("click",function(){changeRecommendationStatus(recomID,1)})
+		.html("Submit recommendation");
+	}
+	
+	graphObj.redraw();
 }

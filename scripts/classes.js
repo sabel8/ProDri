@@ -1,12 +1,13 @@
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID){
+	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
 		this.y = y;
 		this.processID = processID;
+		this.desc = desc;
 		if (txt==="START"){
 			this.status = 2;
 			this.duration=0;
@@ -338,14 +339,14 @@ var shiftKeyPressed,toNode,fromNode,mousePos,selectedEdge,selectedNode,justSpect
 //instance must be named "graphObj" !!!!
 class Graph{
 
-	constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpec){
+	constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpectate){
 		this.nodes = nodes;
 		this.edges = edges;
 		this.allowedCreation = allowedCreation;
 		this.newNodeModalTriggerID = newNodeModalTriggerID;
 		this.objectInfoModalTriggerID = objectInfoModalTriggerID;
 		this.svg;
-		justSpectating=justSpec;
+		justSpectating=justSpectate;
 	}
 
 	getSVGElement(width,height){
@@ -553,7 +554,7 @@ class Graph{
 
 					//setting up the modal with the text
 					d3.select("#objectName").text("Node: "+d.txt);
-					let infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
+					var infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
 					d3.select("#objectInfo").html(infoSplitted);
 					d3.select("#"+thisGraph.objectInfoModalTriggerID).node().click();
 
@@ -587,10 +588,9 @@ class Graph{
 		})
 		//assingning the functions to dragging
 		.call(d3.drag()
-			.on("start", thisGraph.dragstarted)
-			.on("drag", thisGraph.dragged)
-			.on("end", thisGraph.dragend)
-			);
+		.on("start", thisGraph.dragstarted)
+		.on("drag", thisGraph.dragged)
+		.on("end", thisGraph.dragend));
 
 
 		//adding nodes from array
@@ -626,6 +626,7 @@ class Graph{
 	//drag start, (creates if necessary and)
 	//draws a temporary edge
 	dragstarted(d) {
+		if(justSpectating==true){return;}
 		if (shiftKeyPressed===true) {
 			if (justSpectating==true){
 				alert("You are in spectating mode, you cannot create new edge.");
@@ -645,6 +646,7 @@ class Graph{
 	//dragging, redraws the temporary edge
 	//calculates
 	dragged(d){
+		if(justSpectating==true){return;}
 		if (shiftKeyPressed===true) {
 			if (justSpectating==true){return;}
 			let e = d3.event;
@@ -667,10 +669,12 @@ class Graph{
 
 	//drag end
 	dragend(d) {
-		createEdge();
-		shiftKeyPressed=false;
-		updateEdges();
-		updateNodes();
+		if(justSpectating!=true){
+			createEdge();
+			shiftKeyPressed=false;
+			updateEdges();
+			updateNodes();
+		}
 	}
 
 	//zoom functionality

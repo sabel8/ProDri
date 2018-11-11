@@ -53,3 +53,7 @@ a, li {
 .table-hover > tbody > tr:hover {
   background-color: #ebebeb;
 }
+
+hr {
+	border-color:lightgrey
+}

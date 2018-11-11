@@ -25,27 +25,11 @@ if ($_POST) {
 
 ?>
 
-<!-- <div class="container well" id="nameFormDiv">
-	<form id="nameForm" class="form-horizontal">
-    <div class="form-group">
-      <label class="control-label col-sm-2" for="name">Your name:</label>
-      <div class="col-sm-10">
-        <input type="name" class="form-control" placeholder="Michael Jackson" id="personName" value="John Smith">
-      </div>
-    </div>
-    <div class="form-group">        
-      <div class="col-sm-offset-2 col-sm-10">
-        <button type="button" class="btn btn-default" onclick="getTasks()">Submit</button>
-      </div>
-    </div>
-  </form>
-  <div id="tasksTable" class="table-responsive"></div>
-</div> -->
-
 <div class="container well">
   <h3>Showing tasks for: <?php echo $username; ?></h3>
   <?php
   $innerhtml="";
+  //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.status, n.duration, n.RACI,n.ID
 		FROM nodes AS n
 		LEFT JOIN persons AS rp
@@ -57,7 +41,7 @@ if ($_POST) {
 		WHERE rp.personName='".$username."'
     ORDER BY n.status DESC, n.priority DESC");
   if (count($tasks)>1){
-    $innerhtml.=getTableHeader(array("ID","Name","Status","Duration","RACI"));
+    $innerhtml.=getTableHeader(array("ID","Name","Status","Duration","RACI"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
       $curTask=explode(",",$tasks[$i]);
       $innerhtml.="<tr>";

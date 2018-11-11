@@ -39,7 +39,7 @@ function getRowsOfQuery($queryTxt){
 	$result = $query->get_result();
 	$res="";
 	while ($row = $result->fetch_assoc()){
-		$res = $res . implode(",",$row) .";";
+		$res = $res . implode("|",$row) .";";
 	}
 	return explode(";", $res);
 }

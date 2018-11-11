@@ -94,6 +94,10 @@ function calc() {
 }
 
 function deleteSelected() {
+	if(justSpectating==true){
+		alert("You are in spectating mode, thus cannot delete anything!");
+		return;
+	}
 	let nodes = graphObj.nodes;
 	let edges = graphObj.edges;
 	//hiding the status selector of the modal
