@@ -68,6 +68,11 @@ if (isset($_GET["auth"])){
 			window.location.href = url;
 		}
 
+		//sets the tooltip effect
+		$(document).ready(function(){
+    		$('[data-toggle="tooltip"]').tooltip();   
+		});
+
 	</script>
 	
 

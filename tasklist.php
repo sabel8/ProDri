@@ -30,32 +30,43 @@ if ($_POST) {
   <?php
   $innerhtml="";
   //getting and setting the tasks table
-  $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.status, n.duration, n.RACI,n.ID
+  $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(p.processName,' (',proj.projectName,')'),'under development',
+     concat(prof.professionName,' (',prof.seniority,')'), n.status, n.RACI, n.duration,'under dev','under development.'
+	 ,'under development..','under development...','under development....',n.priority,'sample log','blank','two buttons..',n.ID
 		FROM nodes AS n
 		LEFT JOIN persons AS rp
 			ON n.responsiblePersonID=rp.ID 
 		LEFT JOIN processes AS p
 			ON n.processID=p.ID
-		LEFT JOIN projects
-			ON p.projectID=projects.ID
+		LEFT JOIN projects proj
+			ON p.projectID=proj.ID
+    LEFT JOIN professions prof
+      ON prof.ID=n.professionID
 		WHERE rp.personName='".$username."'
     ORDER BY n.status DESC, n.priority DESC");
   if (count($tasks)>1){
-    $innerhtml.=getTableHeader(array("ID","Name","Status","Duration","RACI"),"tasksTable");
+    $innerhtml.=getTableHeader(array("ID","Name","Description","Process (project)","Profession","Inputs",
+	  "Status","RACI","Estimated duration","Planned start","Actual start","Planned finish","Actual finish",
+	  "Last update at","Priority","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
-      $curTask=explode(",",$tasks[$i]);
+      $curTask=explode("|",$tasks[$i]);
       $innerhtml.="<tr>";
       //-1 because n.ID will not be displayed
       for ($n=0;$n<count($curTask)-1;$n++) {
         $innerhtml.="<td>";
         switch ($n) {
           case 3:
-            $innerhtml.='<form action="'.htmlspecialchars($_SERVER["PHP_SELF"]).'" method="post">'.
-                '<input type="number" name="taskDur'.$curTask[count($curTask)-1].'" min="1" value="'.($curTask[3]==NULL?"1":$curTask[3]).'">'.
-                ' <input type="submit" class="btn btn-default" value="Submit"></form>';
+            $innerhtml.='<a href="manage.php?auth=u" data-toggle="tooltip" 
+            	title="Create recommendation!">'.$curTask[$n]."</a>";break;
+          case 6:
+            $innerhtml.=getStatusText($curTask[$n]);break;
+          case 7:
+            $innerhtml.=getRACItext($curTask[$n]);
             break;
-          case 4:
-            $innerhtml.=getRACItext($curTask[4]);
+          case 8:
+            $innerhtml.='<form action="'.htmlspecialchars($_SERVER["PHP_SELF"]).'" method="post">'.
+                '<input type="number" name="taskDur'.$curTask[count($curTask)-1].'" min="1" value="'.($curTask[$n]==NULL?"1":$curTask[$n]).'">'.
+                ' <input type="submit" class="btn btn-default" value="Submit"></form>';
             break;
           default:
             $innerhtml.=$curTask[$n];
