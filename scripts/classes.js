@@ -495,8 +495,7 @@ class Graph{
 		//holds the node's label too
 		var nodes = thisGraph.nodes;
 		var g = d3.select("#graph").selectAll("g")
-		.data(nodes)
-		.enter()
+		.data(nodes).enter()
 		.append("g")
 		.attr("id",function(d,i){return "gNum"+d.ID})
 		.attr("transform", function(d){

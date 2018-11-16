@@ -1,14 +1,12 @@
 <?php
 require_once("config.php");
 include(TEMPLATE.DS."header.php");
-
 $curProcess=1; //todo --> dynamic
 
 function getProjectManagerHTML(){
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
 	if ($_POST) {
-		print_r($_POST);
 		// Execute code (such as database updates) here.
 		foreach ($_POST as $key => $value) {
 			global $connection;
@@ -62,31 +60,41 @@ function getProjectManagerHTML(){
 				//-1 because prof.ID is for dropdown list
 				for ($n=0; $n < count($cells)-4; $n++) {
 					if ($n==3) {
-						$txt=getRACItext($cells[3]);
+						$txt=getRACItext($cells[$n]);
 						$innerhtml.="<td>".$txt."</td>";
 					} else {
 						$innerhtml.="<td>".$cells[$n]."</td>";
 					}
 				}
 
-				$innerhtml.="<td>";
+				
 				$professionID=$cells[5];
 				$ID = $cells[6];
-				
-				//getting and setting up the person(s selection) for the tasks
-				$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
-				WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
-				$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value=\"-1\"> </option>";
-				for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
-					$values=explode("|",$avaliablePersonRows[$n]);
-					$innerhtml.='<option value='.$values[0];
-					if ($values[0]==$cells[4]){
-						$innerhtml.=" selected";
+				$innerhtml.="<td>";
+				if (is_numeric($professionID)){
+					//getting and setting up the person(s selection) for the tasks
+					$avaliablePersonRows=getRowsOfQuery("SELECT pe.ID,personName FROM persons pe,professions pr 
+					WHERE pe.professionID=pr.ID AND pr.ID=".$professionID);
+					//checks if there is any avaliable persons for the task
+					if (count($avaliablePersonRows)==1) {
+						$innerhtml.="<i>There is no person with this profession!</i>";
+					} else {
+						$innerhtml.="<select name='personSel".$cells[6]."' style='width:100%'><option value='-1'> </option>";
+						for ($n=0; $n < count($avaliablePersonRows)-1; $n++) { 
+							$values=explode("|",$avaliablePersonRows[$n]);
+							$innerhtml.='<option value='.$values[0];
+							if ($values[0]==$cells[4]){
+								$innerhtml.=" selected";
+							}
+							$innerhtml.='>'.$values[1].'</option>';
+						}
+						$innerhtml.="</select>";
 					}
-					$innerhtml.='>'.$values[1].'</option>';
+				} else {
+					$innerhtml.="<i>There is no profession assigned to this task!</i>";
 				}
-				$innerhtml.="</select></td>";
-
+				$innerhtml.="</td>";
+				
 				$priorityValuesRows=getRowsOfQuery("SELECT n.priority FROM nodes n WHERE n.ID=".$cells[6]);
 				$innerhtml.="<td><input style='width:50px' type='number' name='priorityOf".$cells[6]."'min='0'";
 				if ($cells[7]!=""){
@@ -125,7 +133,6 @@ function getProcessOwnerHTML(){
 			for($n=0;$n<count($recOfProc)-1;$n++) {
 				$curRec=explode("|",$recOfProc[$n]);
 				$innerhtml.=getTableRecordRow($curRec,(string)("recsTable".$curProcess[2]));
-				print_r((string)("recsTable".$curProcess[2]));
 				$innerhtml.="<td class='text-center'>";
 				//setting up the judgement buttons
 				//set up the buttons on submitted recommendations
@@ -153,7 +160,7 @@ function getProcessOwnerHTML(){
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
 	if ($_POST) {
-		print_r($_POST);
+		//print_r($_POST);
 		// Execute code (such as database updates) here.
 		foreach ($_POST as $key => $value) {
 			global $connection;
@@ -244,253 +251,6 @@ function getProcessOwnerHTML(){
 
 	return $innerhtml;
 }
-
-function getUserHTML($username) {
-	global $connection;
-	$innerhtml="<div class='row'><div class='col-sm-4'><h3>Processes: (for $username)</h3><hr>";
-	$processesInvolvedRows=getRowsOfQuery("SELECT p.ID,processName FROM processes p, nodes n
-		WHERE n.responsiblePersonID=(SELECT pers.ID FROM persons pers WHERE pers.personName='$username')
-		GROUP BY p.ID");
-	$innerhtml.="<select style='width:100%' name='involvedProcesses' size='5'>";
-	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
-		$cells=explode("|",$processesInvolvedRows[$i]);
-
-		//setting up the stringified node array
-		$nodesOfProc=getRowsOfQuery("SELECT nodeID,txt,xCord,yCord,raci,processID,description FROM nodes WHERE processID=".$cells[0]);
-		$nodeString="";
-		for($n=0;$n<count($nodesOfProc)-1;$n++){
-			$curNode = explode("|",$nodesOfProc[$n]);
-			$nodeString.="[";
-			for($e=0;$e<count($curNode);$e++){
-				$nodeString.='\''.$curNode[$e].'\',';
-			}
-			//cut down last colon
-			$nodeString = substr($nodeString,0,-1)."],";
-		}
-		//cut down last colon
-		$nodeString= substr($nodeString,0,-1);
-
-		//setting up the stringified edge array
-		$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM edges WHERE processID=".$cells[0]);
-		$edgeString="";
-		for($n=0;$n<count($edgesOfProc)-1;$n++){
-			$curEdge = explode("|",$edgesOfProc[$n]);
-			$edgeString.="[";
-			for($e=0;$e<count($curEdge);$e++){
-				$edgeString.='\''.$curEdge[$e].'\',';
-			}
-			//cut down last colon
-			$edgeString = substr($edgeString,0,-1)."],";
-		}
-		//cut down last colon
-		$edgeString= substr($edgeString,0,-1);
-
-		$innerhtml.="<option onclick=\"createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)\" value='".$cells[0]."'>".$cells[1]."</option>";
-	}
-	$innerhtml.= "</select>";
-	$innerhtml.="<button class='btn btn-default' onclick='d3.select(\"#recommendationSelectModalTrigger\").node().click()'><span class='glyphicon glyphicon-open'></span> Load recommendation</button>";
-	$innerhtml.="</div><div class='col-sm-8'><h3 style='color:red'><b>Info:</b></h3><hr>";
-	$recLogRows=getRowsOfQuery("SELECT text,timestamp FROM system_message_log log 
-		WHERE typeID=16 or typeID=17 or typeID=18 ORDER BY timestamp DESC LIMIT 5");
-	if(count($recLogRows)>1){
-		$innerhtml.="<ul class='list-group'>";
-		for($i=0;$i<count($recLogRows)-1;$i++) {
-			$curLog=explode("|",$recLogRows[$i]);
-			$innerhtml.="<li class='list-group-item'>".$curLog[0]."<span class='badge'>".$curLog[1]."</span></li>";
-		}
-		$innerhtml.="</ul>";
-	}
-
-
-	$innerhtml.="Kiírja azokat a log-okat aminek az ID-ja 16. 17 vagy 18 (és a userre vonatkoznak...)<br><br>";
-	$innerhtml.="<b>FEJLESZTŐI KOMMENT : lehetne inkább:</b> SELECT ID, text FROM system_message_log AS log 
-		WHERE receiverID=(SELECT ID from persons where personName=$username) AND (typeID=17 OR typeID=18)";
-
-
-	$innerhtml.="</div></div><div id='manageEditorBody'></div>";
-
-	//setting up the modal for recommendation selection
-	$innerhtml.='<a id="recommendationSelectModalTrigger" data-toggle="modal" href="#recommendationSelectModal" style="display:none"></a>';
-	$options="";
-	$recs=getRowsOfQuery("SELECT r.ID,processName,r.status FROM recommendations r,processes p 
-		WHERE r.forProcessID=p.ID");
-	for ($i=0;$i<count($recs)-1;$i++) {
-		$curRec=explode("|",$recs[$i]);
-		switch($curRec[2]){
-			case 0:$status="Not yet submitted";break;
-			case 1:$status="Submitted, but not reviewed";break;
-			case 2:$status="Accepted";break;
-			case 3:$status="Refused";break;
-			default:$status="error";
-		}
-		$nodeString=getNodesOfRec($curRec[0]);
-		$edgeString=getEdgesOfRec($curRec[0]);
-		$recomID=$curRec[0];
-		$options.="<option data-dismiss='modal' onclick=\"viewRec2([$nodeString],[$edgeString],$recomID,".$curRec[2].",false,true)\" value='".$curRec[0]."'>".$curRec[1]." (".$status.")</option>";
-	}
-	$numOfRows=count($recs);
-	$actionParam=htmlspecialchars($_SERVER["PHP_SELF"]);
-	$innerhtml.=<<<DEL
-<div id="recommendationSelectModal" class="modal fade" role="dialog">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal">&times;</button>
-				<h4 id="objectName" class="modal-title">Your recommendations</h4>
-			</div>
-			<div class="modal-body">
-					<select style="width:100%" name="recommendationSelect" size="$numOfRows">
-						$options
-					</select>				
-			</div>
-		</div>
-
-	</div>
-</div>
-DEL;
-	echo $innerhtml;
-	
-}
-
-function getNodesOfRec($recID){
-	//setting up the stringified node array
-	$nodesOfProc=getRowsOfQuery("SELECT nodeID,name,xCord,yCord,raci,r.forProcessID,description 
-		FROM recommended_nodes n,recommendations r WHERE n.recommendationID=r.ID AND n.recommendationID=".$recID);
-	$nodeString="";
-	for($n=0;$n<count($nodesOfProc)-1;$n++){
-		$curNode = explode("|",$nodesOfProc[$n]);
-		$nodeString.="[";
-		for($e=0;$e<count($curNode);$e++){
-			$nodeString.='\''.$curNode[$e].'\',';
-		}
-		//cut down last colon
-		$nodeString = substr($nodeString,0,-1)."],";
-	}
-	//cut down last colon
-	return substr($nodeString,0,-1);
-}
-
-function getEdgesOfRec($recID){
-	//setting up the stringified edge array
-	$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM recommended_edges e
-		WHERE recommendationID=".$recID);
-	$edgeString="";
-	for($n=0;$n<count($edgesOfProc)-1;$n++){
-		$curEdge = explode("|",$edgesOfProc[$n]);
-		$edgeString.="[";
-		for($e=0;$e<count($curEdge);$e++){
-			$edgeString.='\''.$curEdge[$e].'\',';
-		}
-		//cut down last colon
-		$edgeString = substr($edgeString,0,-1)."],";
-	}
-	//cut down last colon
-	return substr($edgeString,0,-1);
-
-}
-
-function getStatusName($status) {
-	$res="";
-	switch($status) {
-		case 0:
-			$res.="Not yet submitted.";
-			break;
-		case 1:
-			$res.="Under review...";
-			break;
-		case 2:
-			$res.="Accepted! Thank you.";
-			break;
-		case 3:
-			$res.="Refused. Sorry.";
-			break;
-	}
-	return $res;
-}
-
-
-//returns the color class of the row
-//according to its status
-function getColorClass($status) {
-	switch ($status) {
-		case '0':
-			$colorClass="warning";
-			break;
-		case '1':
-			$colorClass="info";
-			break;
-		case '2':
-			$colorClass="success";
-			break;
-		case '3':
-			$colorClass="danger";
-			break;
-	}
-	return $colorClass;
-}
-
-//returns the html of a recommendation row
-//on click the preview shows up
-//param $cells = array of the values in table cells
-function getTableRecordRow($cells,$tableID) {
-	$innerhtml="";
-	global $connection;
-	//query for getting the nodes of the recommendation
-	$query = $connection->prepare("
-		SELECT r.nodeID,r.name,r.xCord,r.yCord,r.status,r.professionID,\"\",r.duration,r.raci,re.forProcessID,re.forProcessID 
-		FROM recommended_nodes r, recommendations re WHERE r.recommendationID=?");
-	$query->bind_param('i',$cells[0]);
-	confirm($query);
-	$query->execute();
-	$result = $query->get_result();
-	$nodes="";
-	while ($row = $result->fetch_assoc()){
-		$nodes .= "['".implode("','",$row)."'],";
-	}
-	//removing the last unnecessary colon
-	$nodes=rtrim($nodes,",");
-
-	//query for getting the edges of the recommendation
-	$query = $connection->prepare("
-		SELECT r.ID,r.fromNodeID,r.toNodeID
-		FROM recommended_edges r WHERE r.recommendationID=?");
-	$query->bind_param('i',$cells[0]);
-	confirm($query);
-	$query->execute();
-	$result = $query->get_result();
-	$edges="";
-	while ($row = $result->fetch_assoc()){
-		$edges .= "['".implode("','",$row)."'],";
-	}
-	//removing the last unnecessary colon
-	$edges=rtrim($edges,",");
-
-	$colorClass=getColorClass($cells[2]);
-
-	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' 
-		onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}],'$tableID')\">";
-		//viewRec2([$nodes],[$edges],{$cells[0]},{$cells[2]},false,true,'".$tableID."')
-	for ($n=0;$n < count($cells)-1;$n++){
-		$innerhtml.='<td class="text-center">';
-		switch($n){
-			case 2:
-				$innerhtml.=getStatusName($cells[2]);
-				break;
-			default:
-				$innerhtml.=$cells[$n];
-		}
-		$innerhtml.="</td>";
-	}
-	return $innerhtml;
-}
-
-//return an option element with the raci character in value
-//and the full raci word in title
-function getRACIoption($cell,$raci){
-	$selected = strtolower($cell)==$raci?" selected":"";
-	return "<option value='".$raci."'".$selected.">".getRACItext($raci)."</option>";
-}
-
 ?>
 
 <script type="text/javascript" src="scripts/manage.js"></script>
@@ -512,7 +272,9 @@ function getRACIoption($cell,$raci){
 				break;
 			//USER
 			case "u":
-				$innerhtml=getUserHTML($username);
+				//$innerhtml=getUserHTML($username);
+				$innerhtml="<div class='alert alert-success'><strong>Congratulations!</strong>
+				 You found this easter egg, now please report this to the developer, he'll know whats up! :)</div>";
 				break;
 
 			//ERROR : NONE OF THE ABOVE

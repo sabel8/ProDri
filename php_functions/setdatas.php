@@ -132,19 +132,22 @@ if ($q=="insert") {
 			if ($p[1]==16){
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
 				VALUES (16, 2, (SELECT concat(personName,' recommended a new process, please review it.') 
-				FROM persons p,recommendations r WHERE p.ID=r.submitterPersonID AND r.ID=?), ?);");
+				FROM persons p,recommendations r WHERE p.ID=r.submitterPersonID AND r.ID=?), 
+				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?));");
 				$query->bind_param("ii",$p[2],$p[2]);
 			} else if($p[1]==17) {
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
 				VALUES (17,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was approved by PO.') 
 				FROM processes p, recommendations r,persons per 
-				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),?)");
+				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),
+				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?))");
 				$query->bind_param("ii",$p[2],$p[2]);
 			} else if($p[1]==18){
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
 				VALUES (18,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was declined by PO.') 
 				FROM processes p, recommendations r,persons per 
-				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),?)");
+				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),
+				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?))");
 				$query->bind_param("ii",$p[2],$p[2]);
 			}
 	}

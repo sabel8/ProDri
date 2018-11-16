@@ -20,7 +20,7 @@ function getNodesAndEdges(procID) {
 			setEdges(array);
 		}
 	};
-	xmlhttp.open("GET", "php_functions/getdatas.php?q=edges", false);
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=edges&p="+procID, false);
 	xmlhttp.send();
 	
 	//redraw if graph should be shown

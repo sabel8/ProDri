@@ -94,12 +94,14 @@ function calc() {
 }
 
 function deleteSelected() {
+	edges = graphObj.edges;
+	nodes = graphObj.nodes;
 	if(justSpectating==true){
 		alert("You are in spectating mode, thus cannot delete anything!");
 		return;
 	}
-	let nodes = graphObj.nodes;
-	let edges = graphObj.edges;
+	/*let nodes = graphObj.nodes;
+	let edges = graphObj.edges;*/
 	//hiding the status selector of the modal
 	d3.select("#statusSelect").style("display","none");
 	if (selectedEdge==null && selectedNode==null) {
@@ -118,15 +120,14 @@ function deleteSelected() {
 	}
 	//DELETE NODE
 	else if (selectedNode!=null) {
-		let response = confirm("Do you really want to delete the selected"
-			+"\nnode and all the edges connected to it?"
-			+" This action cannot be undone.");
-		if (response === true) {
+		if (confirm("Do you really want to delete the selected"
+		+"\nnode and all the edges connected to it?"
+		+" This action cannot be undone.") === true) {
 			//deleting all edges related to the node
 			for (var i = 0;i<edges.length;i++) {
 				var curEdge=edges[i];
 				//if it derives from or points at the node
-				if (curEdge.toNodeID===selectedNode.ID || curEdge.fromNodeID===selectedNode.ID) {
+				if (curEdge.toNodeID==selectedNode.ID || curEdge.fromNodeID==selectedNode.ID) {
 					//console.log(runInsert(["edgeDel",curEdge.ID]));
 					deleteEdge(curEdge);
 					//deletion makes length decreased by one
@@ -183,9 +184,9 @@ function selectStatus() {
 //helper function
 //do not use directly
 function deleteEdge(edge){
-	let nodes = graphObj.nodes;
-	let edges = graphObj.edges;
-	let pos = getPosInArray(edge.ID,edges);
+	var nodes = graphObj.nodes;
+	var edges = graphObj.edges;
+	var pos = getPosInArray(edge.ID,edges);
 	edges.splice(pos,1);
 }
 

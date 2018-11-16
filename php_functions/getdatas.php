@@ -15,7 +15,7 @@ if ($q=="nodes") {
 
 
 } else if ($q=="edges") {
-	$query = query("SELECT * FROM edges");
+	$query = query("SELECT * FROM edges WHERE processID=".$_REQUEST['p']);
 	confirm($query);
 	while ($row = fetch_array($query)){
 		$res = $res . implode(",",$row) .";";

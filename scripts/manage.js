@@ -1,5 +1,6 @@
 var openedCreator=false;
 var graphObj;
+var recomID;
 
 function submitGraph(processID,personID) {
 	var recomID;
@@ -64,16 +65,13 @@ function viewRecommendation(recID,recNodes,recEdges,tableID) {
 		.attr("class","btn btn-danger")
 		.html('<span class="glyphicon glyphicon-remove"></span>');
 	var parent = d3.select("#"+tableID).node().parentNode;
-	//someElement.parentNode.insertBefore(newElement, someElement.nextSibling);
-	console.log("param tablename: "+tableID);
 	insertAfter(closeButton , parent);
 	insertAfter(graphObj.getSVGElement(parent.offsetWidth,400) , d3.select("#closeSVGButton").node());
-	//insertAfter(document.createElement('br') , d3.select("#"+tableID).node());
 	redraw();
 }
 
 function closeGraph(){
-	d3.select("#createRecButton").remove()
+	d3.select("#createRecButton").attr("style","display:none");
 	d3.select("#closeSVGButton").remove();
 	d3.select("svg").remove();
 }
@@ -168,15 +166,11 @@ function createRecommendation2(nodesParam,edgesParam,processID){
 	//constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpectate)
 	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
 	reviseInAndOutputs();
-	d3.select("#manageEditorBody").html("<br>");
+	d3.select("svg").remove();
 	var parent = d3.select("#manageEditorBody").node();
 	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
-	d3.select("#manageEditorBody").append("button")
-		.attr("id","createRecButton")
-		.attr("type","button")
-		.attr("class","btn btn-success")
-		.on("click",function(){submitGraph(processID,4);})//change to dynamic
-		.html("<span class='glyphicon glyphicon-ok'></span> Create recommendation");
+	d3.select("#createRecButton").attr("style","display:inline-block");
+	d3.select("#submitRecButton").attr("style","display:none");
 	graphObj.redraw();
 }
 
@@ -200,17 +194,14 @@ function viewRec2(nodesParam,edgesParam,recomID,status,allowedCreation,spectateM
 	//setting up the graph element and the svg
 	graphObj = new Graph(nodes,edges,allowedCreation,"newNodeModalTrigger","objectInfoModalTrigger",spectateMode);
 	reviseInAndOutputs();
-	d3.select("#manageEditorBody").html("<br>");
+	d3.select("svg").remove();
 	console.log(tableID);
 	var parent = d3.select("#manageEditorBody").node();
-	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
+	d3.select("#createRecButton").attr("style","display:none");
 	if (status==0){
-		d3.select("#manageEditorBody").append("button")
-		.attr("type","submit")
-		.attr("class","btn btn-primary")
-		.on("click",function(){changeRecommendationStatus(recomID,1)})
-		.html("Submit recommendation");
+		d3.select("#submitRecButton").attr("style","display:inline-block");
 	}
+	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
 	
 	graphObj.redraw();
 }
