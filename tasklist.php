@@ -70,9 +70,12 @@ function getUserHTML($username) {
     }
 	$innerhtml.= "</select>";
 
+  //setting up the log table
 	$innerhtml.="</div><div class='col-sm-8'><h3 style='color:red'><b>Info:</b></h3><hr>";
-	$recLogRows=getRowsOfQuery("SELECT processName,timestamp,text FROM system_message_log log, processes p  
-		WHERE (typeID=16 or typeID=17 or typeID=18) AND log.processID=p.ID ORDER BY timestamp DESC");
+	$recLogRows=getRowsOfQuery("SELECT processName,timestamp,text FROM system_message_log log
+      LEFT JOIN processes p ON log.processID=p.ID
+      WHERE (typeID=16 or typeID=17 or typeID=18) 
+      ORDER BY timestamp DESC");
   if(count($recLogRows)>1){
     $innerhtml.=getTableHeader(array("Process","Time","Log"),"logTable");
     for ($i=0;$i<count($recLogRows)-1;$i++) {
@@ -81,6 +84,7 @@ function getUserHTML($username) {
       for ($n=0;$n<count($curLog);$n++) {
         $innerhtml.="<td>";
         switch ($n) {
+          case 0:$innerhtml.=($curLog[$n]==""?"<i>NO TITLE</i>":$curLog[$n]);break;
           default:
             $innerhtml.=$curLog[$n];
         }
@@ -91,11 +95,6 @@ function getUserHTML($username) {
     $innerhtml.="</tbody></table></div>";
   }
 
-
-
-	/*$innerhtml.="Kiírja azokat a log-okat aminek az ID-ja 16. 17 vagy 18 (és a userre vonatkoznak...)<br><br>";
-	$innerhtml.="<b>FEJLESZTŐI KOMMENT : lehetne inkább:</b> SELECT ID, text FROM system_message_log AS log 
-		WHERE receiverID=(SELECT ID from persons where personName=$username) AND (typeID=17 OR typeID=18)";*/
 
 
   $innerhtml.="</div></div><div id='manageEditorBody'>
@@ -117,7 +116,7 @@ function getUserHTML($username) {
 	//setting up the modal for recommendation selection
 	$innerhtml.='<a id="recommendationSelectModalTrigger" data-toggle="modal" href="#recommendationSelectModal" style="display:none"></a>';
 	$options="";
-	$recs=getRowsOfQuery("SELECT r.ID,processName,r.status FROM recommendations r,processes p 
+	$recs=getRowsOfQuery("SELECT r.ID,processName,r.status,r.title FROM recommendations r,processes p 
 		WHERE r.forProcessID=p.ID");
 	for ($i=0;$i<count($recs)-1;$i++) {
 		$curRec=explode("|",$recs[$i]);
@@ -131,7 +130,8 @@ function getUserHTML($username) {
 		$nodeString=getNodesOfRec($curRec[0]);
 		$edgeString=getEdgesOfRec($curRec[0]);
     $recomID=$curRec[0];
-		$options.="<option data-dismiss='modal' onclick=\"recomID=$recomID;viewRec2([$nodeString],[$edgeString],$recomID,".$curRec[2].",false,true)\" value='".$curRec[0]."'>".$curRec[1]." (".$status.")</option>";
+    $options.="<option data-dismiss='modal' onclick=\"recomID=$recomID;viewRec2([$nodeString],[$edgeString],
+      $recomID,".$curRec[2].",false,true)\" value='".$curRec[0]."'>".($curRec[3]==""?"":$curRec[3]." : ").$curRec[1]." (".$status.")</option>";
 	}
 	$numOfRows=count($recs);
 	$actionParam=htmlspecialchars($_SERVER["PHP_SELF"]);
@@ -166,7 +166,8 @@ DEL;
 $(document).ready( function () {
     $('#logTable').DataTable({
       "pageLength":5,
-      "lengthMenu":[[5,10,-1],[5,10,"All"]]
+      "lengthMenu":[[5,10,-1],[5,10,"All"]],
+      "order": [ 1, 'desc' ]
     });
 } );
 </script>
@@ -203,9 +204,6 @@ $(document).ready( function () {
       for ($n=0;$n<count($curTask)-1;$n++) {
         $innerhtml.="<td>";
         switch ($n) {
-          case 3:
-            $innerhtml.='<a href="manage.php?auth=u" data-toggle="tooltip" 
-            	title="Create recommendation!">'.$curTask[$n]."</a>";break;
           case 6:
             $innerhtml.=getStatusText($curTask[$n]);break;
           case 7:

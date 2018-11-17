@@ -114,6 +114,7 @@ function setModalTitle(activeLi) {
 				+'<input type="text" id="processTitle" value="Example process 1"><br><br>'
 				+'Project name:<br><select id="projectSelect">';
 			var projects = getProjects();
+			form += "<option value='-1' selected></option>";
 			for (var i = 0; i < projects.length-1; i++) {
 				//first element is ID
 				//second element is name
@@ -218,7 +219,7 @@ function getDeliverableTypes() {
 
 //called when create button of the modal is clicked
 function createRecord() {
-	let result="";
+	var result = "";
 	switch(activeLi){
 		case "projectsDropdown":
 			var projectName = d3.select("#projectName").node().value;
@@ -229,13 +230,13 @@ function createRecord() {
 			var processName = d3.select("#processTitle").node().value;
 			var selectEl = d3.select("#projectSelect").node();
 			var projectID = selectEl.options[selectEl.selectedIndex].value;
-			result = runInsert(new Array("processes",processName,projectID));
+			result = runInsert(["processes",processName,projectID]);
 			alert(result);
 			break;
 		case "professionsDropdown":
 			var professionName = d3.select("#professionName").node().value;
 			var seniority = d3.select("#seniority").node().value;
-			result = runInsert(new Array("professions",professionName,seniority));
+			result = runInsert(["professions",professionName,seniority]);
 			alert(result);
 			break;
 		case "personsDropdown":
@@ -258,6 +259,7 @@ function createRecord() {
 			alert(result);
 			break;
 	}
+	//refreshing the table
 	tableSetup(activeLi);
 }
 

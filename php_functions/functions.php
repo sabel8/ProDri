@@ -224,7 +224,7 @@ function getTableRecordRow($cells,$tableID) {
 	//removing the last unnecessary colon
 	$edges=rtrim($edges,",");
 
-	$colorClass=getColorClass($cells[2]);
+	$colorClass=getColorClass($cells[3]);
 
 	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' 
 		onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}],'$tableID')\">";
@@ -232,8 +232,10 @@ function getTableRecordRow($cells,$tableID) {
 	for ($n=0;$n < count($cells)-1;$n++){
 		$innerhtml.='<td class="text-center">';
 		switch($n){
-			case 2:
-				$innerhtml.=getStatusName($cells[2]);
+			case 1:
+				$innerhtml.=($cells[$n]==""?"<i>NO TITLE</i>":$cells[$n]);break;
+			case 3:
+				$innerhtml.=getStatusName($cells[3]);
 				break;
 			default:
 				$innerhtml.=$cells[$n];

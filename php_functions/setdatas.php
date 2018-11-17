@@ -9,8 +9,14 @@ if ($q=="insert") {
 	global $connection;
 	switch ($p[0]) {
 		case "processes":
-			$query = $connection->prepare("INSERT INTO processes (ID, processName, projectID) VALUES (NULL, ?, ?)");
-			$query->bind_param('ss',$p[1],$p[2]);
+			//checks if there is assigned project or not
+			if($p[2]!="-1"){
+				$query = $connection->prepare("INSERT INTO processes (ID, processName, projectID) VALUES (NULL, ?, ?)");
+				$query->bind_param('ss',$p[1],$p[2]);
+			} else {
+				$query = $connection->prepare("INSERT INTO processes (ID, processName) VALUES (NULL, ?)");
+				$query->bind_param('s',$p[1]);
+			}
 			break;
 		case "projects":
 			$query = $connection->prepare("INSERT INTO projects (ID, projectName) VALUES (NULL,?)");
@@ -131,20 +137,20 @@ if ($q=="insert") {
 			//p[2] = recomID
 			if ($p[1]==16){
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
-				VALUES (16, 2, (SELECT concat(personName,' recommended a new process, please review it.') 
+				VALUES (16, 2, (SELECT concat(personName,' recommended a new process, please review it. Title: ',r.title) 
 				FROM persons p,recommendations r WHERE p.ID=r.submitterPersonID AND r.ID=?), 
 				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?));");
 				$query->bind_param("ii",$p[2],$p[2]);
 			} else if($p[1]==17) {
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
-				VALUES (17,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was approved by PO.') 
+				VALUES (17,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was approved by PO. Title:',r.title) 
 				FROM processes p, recommendations r,persons per 
 				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),
 				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?))");
 				$query->bind_param("ii",$p[2],$p[2]);
 			} else if($p[1]==18){
 				$query=$connection->prepare("INSERT INTO system_message_log (typeID, receiverTypeID, text, processID)
-				VALUES (18,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was declined by PO.') 
+				VALUES (18,1,(SELECT concat('\"',processName,'\" process modification by \"',personName,'\" was declined by PO. Title:',r.title) 
 				FROM processes p, recommendations r,persons per 
 				WHERE p.ID=r.forProcessID AND r.ID=? AND per.ID=r.submitterPersonID),
 				(SELECT p.ID FROM processes p, recommendations r WHERE r.forProcessID=p.ID AND r.ID=?))");
@@ -191,10 +197,11 @@ if ($q=="insert") {
 
 } else if ($_POST["q"]=="newRecom"){
 	global $connection;
-	$query = $connection->prepare("INSERT INTO recommendations (ID,submitterPersonID,forProcessID,status) VALUES (NULL,?,?,0)");
+	$query = $connection->prepare("INSERT INTO recommendations (ID,title,submitterPersonID,forProcessID,status) 
+	VALUES (NULL,?,?,?,0)");
 
 	confirm($query);
-	$query->bind_param('ii',$_POST["from"],$_POST["p"]);
+	$query->bind_param('sii',$_POST["title"],$_POST["from"],$_POST["p"]);
 
 	if ($query->execute()) {
 		$query=$connection->prepare("SELECT ID FROM recommendations WHERE submitterPersonID=? AND forProcessID=?  AND status=0 ORDER BY ID DESC");

@@ -3,6 +3,7 @@ var graphObj;
 var recomID;
 
 function submitGraph(processID,personID) {
+	var person = prompt("Title of the recommendtaion", "Példa kiajánlás");
 	var recomID;
 	var xmlhttp = new XMLHttpRequest();
 	xmlhttp.open("POST", "php_functions/setdatas.php", false);
@@ -12,7 +13,7 @@ function submitGraph(processID,personID) {
 			recomID = this.responseText;
 		}
 	};
-	xmlhttp.send("q=newRecom&p="+processID+"&from="+personID);
+	xmlhttp.send("q=newRecom&p="+processID+"&from="+personID+"&title="+person);
 	console.log("recomID="+recomID);
 
 	for (var i = 0; i < graphObj.nodes.length; i++) {

@@ -127,28 +127,28 @@ function getProcessOwnerHTML(){
 		for($i=0;$i<count($recProcesses)-1;$i++) {
 			$curProcess=explode("|",$recProcesses[$i]);
 			$innerhtml.="<h4><b>".$curProcess[1]."</b> (".$curProcess[0].")</h4>";
-			$recOfProc=getRowsOfQuery("SELECT r.ID,p.personName,r.status,r.isLive FROM recommendations r, persons p
+			$recOfProc=getRowsOfQuery("SELECT r.ID,r.title,p.personName,r.status,r.isLive FROM recommendations r, persons p
 				WHERE r.submitterPersonID=p.ID AND r.forProcessID=".$curProcess[2]." AND NOT r.status=0");
-			$innerhtml .= getTableHeader(array("ID","Submitter person","Status","Judgement"),"recsTable".$curProcess[2]);
+			$innerhtml .= getTableHeader(array("ID","Title","Submitter person","Status","Judgement"),"recsTable".$curProcess[2]);
 			for($n=0;$n<count($recOfProc)-1;$n++) {
 				$curRec=explode("|",$recOfProc[$n]);
 				$innerhtml.=getTableRecordRow($curRec,(string)("recsTable".$curProcess[2]));
 				$innerhtml.="<td class='text-center'>";
 				//setting up the judgement buttons
 				//set up the buttons on submitted recommendations
-				if ($curRec[2]==1) {
+				if ($curRec[3]==1) {
 					$innerhtml.="
 					<button class='btn btn-success' type='button'
 					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},2)'>Accept</button>
 					<button class='btn btn-danger' type='button'
 					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},3)'>Refuse</button>";
 				//set up the withdraw button
-				} else if ($curRec[2]==2 && $curRec[3]==1) {
+				} else if ($curRec[3]==2 && $curRec[4]==1) {
 					$innerhtml.="
 					<button class='btn btn-primary' type='button' onclick='event.stopPropagation();withdraw({$curRec[0]});
 						changeRecommendationStatus({$curRec[0]},1)'>Withdraw</button>";
 				} else {
-					$innerhtml.= "<i>This recommendation is ".getStatusName($curRec[2])."</i>";
+					$innerhtml.= "<i>This recommendation is ".getStatusName($curRec[3])."</i>";
 				}
 				$innerhtml.="</td></tr>";
 			}
