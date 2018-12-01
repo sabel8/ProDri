@@ -113,8 +113,8 @@ function getStatusText($value){
 
 function getNodesOfRec($recID){
 	//setting up the stringified node array
-	$nodesOfProc=getRowsOfQuery("SELECT nodeID,name,xCord,yCord,raci,r.forProcessID,description 
-		FROM recommended_nodes n,recommendations r WHERE n.recommendationID=r.ID AND n.recommendationID=".$recID);
+	$nodesOfProc=getRowsOfQuery("SELECT nodeID,name,xCord,yCord,professionID,raci,p.processGroupID,n.description 
+		FROM abstract_nodes n,abstract_processes p WHERE n.abstractProcessID=p.ID AND p.ID=".$recID);
 	$nodeString="";
 	for($n=0;$n<count($nodesOfProc)-1;$n++){
 		$curNode = explode("|",$nodesOfProc[$n]);
@@ -131,8 +131,8 @@ function getNodesOfRec($recID){
 
 function getEdgesOfRec($recID){
 	//setting up the stringified edge array
-	$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM recommended_edges e
-		WHERE recommendationID=".$recID);
+	$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM abstract_edges e
+		WHERE abstractProcessID=".$recID);
 	$edgeString="";
 	for($n=0;$n<count($edgesOfProc)-1;$n++){
 		$curEdge = explode("|",$edgesOfProc[$n]);
@@ -195,9 +195,8 @@ function getTableRecordRow($cells,$tableID) {
 	$innerhtml="";
 	global $connection;
 	//query for getting the nodes of the recommendation
-	$query = $connection->prepare("
-		SELECT r.nodeID,r.name,r.xCord,r.yCord,r.status,r.professionID,\"\",r.duration,r.raci,re.forProcessID,re.forProcessID 
-		FROM recommended_nodes r, recommendations re WHERE r.recommendationID=?");
+	$query = $connection->prepare("SELECT n.nodeID,n.name,n.xCord,n.yCord,n.professionID,n.raci,n.description,p.processGroupID
+		FROM abstract_nodes n, abstract_processes p WHERE n.abstractProcessID=?");
 	$query->bind_param('i',$cells[0]);
 	confirm($query);
 	$query->execute();
@@ -210,9 +209,8 @@ function getTableRecordRow($cells,$tableID) {
 	$nodes=rtrim($nodes,",");
 
 	//query for getting the edges of the recommendation
-	$query = $connection->prepare("
-		SELECT r.ID,r.fromNodeID,r.toNodeID
-		FROM recommended_edges r WHERE r.recommendationID=?");
+	$query = $connection->prepare("SELECT r.ID,r.fromNodeID,r.toNodeID
+		FROM abstract_edges r WHERE r.abstractProcessID=?");
 	$query->bind_param('i',$cells[0]);
 	confirm($query);
 	$query->execute();
@@ -233,12 +231,18 @@ function getTableRecordRow($cells,$tableID) {
 		$innerhtml.='<td class="text-center">';
 		switch($n){
 			case 1:
-				$innerhtml.=($cells[$n]==""?"<i>NO TITLE</i>":$cells[$n]);break;
+				$innerhtml.=($cells[$n]==""?"<i>NO TITLE</i>":htmlspecialchars($cells[$n]));break;
 			case 3:
-				$innerhtml.=getStatusName($cells[3]);
+				//if this is the live version
+				if($cells[0]==$cells[5]) {
+					$innerhtml.="Live, latest version";
+				} else {
+					$innerhtml.=getStatusName($cells[3]);
+				}
 				break;
+			case 5:break;
 			default:
-				$innerhtml.=$cells[$n];
+				$innerhtml.=htmlspecialchars($cells[$n]);
 		}
 		$innerhtml.="</td>";
 	}

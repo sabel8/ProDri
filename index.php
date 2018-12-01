@@ -38,7 +38,7 @@ include(TEMPLATE.DS."header.php");
 	</div>
 
 	<a id="objectInfoModalTrigger" style="display: none" data-toggle="modal" href="#objectInfoModal"></a>
-	<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="setupModal()"></a>
+	<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="setupNewNodeModal()"></a>
 
 	<!-- Object Info Modal -->
 	<div id="objectInfoModal" class="modal fade" role="dialog">

@@ -88,14 +88,10 @@ function createEditTable(array) {
 function setupModal(activeLi,array) {
 	setModalTitle(activeLi);
 
-	/*
-	Task name:<br>
+	
+	/*Task name:<br>
 	<input type="text" id="nodeTitle" value="Example task 1">
-	<br><br>
-	*/
-	for (var i = 0; i < array.length-1; i++) {
-		
-	}
+	<br><br>*/
 }
 
 

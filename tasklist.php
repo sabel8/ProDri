@@ -25,18 +25,20 @@ if ($_POST) {
 
 function getUserHTML($username) {
 	global $connection;
-	$innerhtml="<div class='row'><div class='col-sm-4'><h3>Processes: (for $username)</h3><hr>";
-	$processesInvolvedRows=getRowsOfQuery("SELECT n.processID,concat(processName,' (',projectName,')') 
-    FROM processes p, nodes n, projects proj
-    WHERE n.responsiblePersonID=(SELECT pers.ID FROM persons pers WHERE pers.personName='$username') 
-    AND proj.ID=p.projectID AND p.ID=n.processID
-    GROUP BY p.ID ORDER BY projectName, processName");
+  $innerhtml="<div class='row'><div class='col-sm-4'><h3>Processes: (for $username)</h3><hr>";
+  //getting the processes which the user is included in
+	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
+    FROM abstract_processes ap, process_groups pg,processes p, nodes n
+    WHERE n.responsiblePersonID=(SELECT pers.ID FROM persons pers 
+    WHERE pers.personName='$username') AND pg.ID=ap.processGroupID
+    GROUP BY pg.ID ORDER BY pg.name, title");
 	$innerhtml.="<select style='width:100%' name='involvedProcesses' size='5'>";
 	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
 		$cells=explode("|",$processesInvolvedRows[$i]);
 
 		//setting up the stringified node array
-		$nodesOfProc=getRowsOfQuery("SELECT nodeID,txt,xCord,yCord,raci,processID,description FROM nodes WHERE processID=".$cells[0]);
+		$nodesOfProc=getRowsOfQuery("SELECT nodeID,name,xCord,yCord,raci,abstractProcessID,description,professionID 
+    FROM abstract_nodes WHERE abstractProcessID=".$cells[0]);
 		$nodeString="";
 		for($n=0;$n<count($nodesOfProc)-1;$n++){
 			$curNode = explode("|",$nodesOfProc[$n]);
@@ -51,7 +53,7 @@ function getUserHTML($username) {
 		$nodeString= substr($nodeString,0,-1);
 
 		//setting up the stringified edge array
-		$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM edges WHERE processID=".$cells[0]);
+		$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM abstract_edges WHERE abstractProcessID=".$cells[0]);
 		$edgeString="";
 		for($n=0;$n<count($edgesOfProc)-1;$n++){
         $curEdge = explode("|",$edgesOfProc[$n]);
@@ -65,19 +67,19 @@ function getUserHTML($username) {
       //cut down last colon
       $edgeString= substr($edgeString,0,-1);
 
-      $innerhtml.="<option onclick=\"processID=".$cells[0].";createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)
+      $innerhtml.="<option onclick=\"title=null;processGroupID=".$cells[2].";createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)
       \" value='".$cells[0]."'>".$cells[1]."</option>";
     }
 	$innerhtml.= "</select>";
 
   //setting up the log table
 	$innerhtml.="</div><div class='col-sm-8'><h3 style='color:red'><b>Info:</b></h3><hr>";
-	$recLogRows=getRowsOfQuery("SELECT processName,timestamp,text FROM system_message_log log
-      LEFT JOIN processes p ON log.processID=p.ID
+	$recLogRows=getRowsOfQuery("SELECT p.name,timestamp,text FROM system_message_log log
+      LEFT JOIN process_groups p ON log.processID=p.ID
       WHERE (typeID=16 or typeID=17 or typeID=18) 
       ORDER BY timestamp DESC");
   if(count($recLogRows)>1){
-    $innerhtml.=getTableHeader(array("Process","Time","Log"),"logTable");
+    $innerhtml.=getTableHeader(array("Process group","Date & Time","Log"),"logTable");
     for ($i=0;$i<count($recLogRows)-1;$i++) {
       $curLog=explode("|",$recLogRows[$i]);
       $innerhtml.="<tr>";
@@ -103,11 +105,15 @@ function getUserHTML($username) {
   <span class='glyphicon glyphicon-open'></span> Load recommendation
   </button>
 
-  <button id='createRecButton' type='button' class='btn btn-success' style='display:none' onclick='submitGraph(processID,4)'>
-  <span class='glyphicon glyphicon-ok'></span> Create recommendation
+  <button id='createRecButton' type='button' class='btn btn-success' style='display:none' onclick='createRec(processGroupID,4,true)'>
+  <span class='glyphicon glyphicon-save'></span> Create recommendation
+  </button>
+  
+  <button id='saveRecButton' type='button' class='btn btn-success' style='display:none' onclick='updateElementsOfRec(absProcID)'>
+  <span class='glyphicon glyphicon-save'></span> Save recommendation
   </button>
 
-  <button id='submitRecButton' type='button' class='btn btn-primary' style='display:none' onclick='changeRecommendationStatus(recomID,1)'>
+  <button id='submitRecButton' type='button' class='btn btn-primary' style='display:none' onclick='changeRecommendationStatus(absProcID,1)'>
   <span class='glyphicon glyphicon-ok'></span> Submit recommendation
   </button>
 
@@ -116,8 +122,8 @@ function getUserHTML($username) {
 	//setting up the modal for recommendation selection
 	$innerhtml.='<a id="recommendationSelectModalTrigger" data-toggle="modal" href="#recommendationSelectModal" style="display:none"></a>';
 	$options="";
-	$recs=getRowsOfQuery("SELECT r.ID,processName,r.status,r.title FROM recommendations r,processes p 
-		WHERE r.forProcessID=p.ID");
+	$recs=getRowsOfQuery("SELECT p.ID,pg.name,p.status,p.title,p.processGroupID FROM abstract_processes p,process_groups pg 
+    WHERE p.processGroupID=pg.ID");
 	for ($i=0;$i<count($recs)-1;$i++) {
 		$curRec=explode("|",$recs[$i]);
 		switch($curRec[2]){
@@ -130,8 +136,10 @@ function getUserHTML($username) {
 		$nodeString=getNodesOfRec($curRec[0]);
 		$edgeString=getEdgesOfRec($curRec[0]);
     $recomID=$curRec[0];
-    $options.="<option data-dismiss='modal' onclick=\"recomID=$recomID;viewRec2([$nodeString],[$edgeString],
-      $recomID,".$curRec[2].",false,true)\" value='".$curRec[0]."'>".($curRec[3]==""?"":$curRec[3]." : ").$curRec[1]." (".$status.")</option>";
+    $processID=$curRec[4];
+    $title=$curRec[3];
+    $options.="<option data-dismiss='modal' onclick=\"var title='$title';processGroupID=$processID;absProcID=$recomID;viewRec2([$nodeString],[$edgeString],
+      $recomID,".$curRec[2].",true,false)\" value='".$curRec[0]."'>".($title==""?"":$title." : ").$curRec[1]." (".$status.")</option>";
 	}
 	$numOfRows=count($recs);
 	$actionParam=htmlspecialchars($_SERVER["PHP_SELF"]);
@@ -179,18 +187,22 @@ $(document).ready( function () {
   <?php
   $innerhtml="";
   //getting and setting the tasks table
-  $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(p.processName,' (',proj.projectName,')'),
+  $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
      concat(prof.professionName,' (',prof.seniority,')'),'under development', n.status, n.RACI, n.duration,'under dev','under development.'
 	 ,'under development..','under development...','under development....',n.priority,'sample log','blank','two buttons..',n.ID
 		FROM nodes AS n
-		LEFT JOIN persons AS rp
+		LEFT JOIN persons rp
 			ON n.responsiblePersonID=rp.ID 
-		LEFT JOIN processes AS p
+		LEFT JOIN processes p
 			ON n.processID=p.ID
 		LEFT JOIN projects proj
 			ON p.projectID=proj.ID
     LEFT JOIN professions prof
       ON prof.ID=n.professionID
+    LEFT JOIN abstract_processes ap
+      ON ap.ID=p.abstractProcessID
+    LEFT JOIN process_groups pg
+      ON pg.latestVerProcID=ap.ID
 		WHERE rp.personName='".$username."'
     ORDER BY n.status DESC, n.priority DESC");
   if (count($tasks)>1){
@@ -258,7 +270,7 @@ $(document).ready( function () {
   </div>
 </div>
 
-<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="/*setupModal()*/"></a>
+<a id="newNodeModalTrigger" style="display: none" data-toggle="modal" href="#newNodeModal" onclick="setupNewNodeModal()"></a>
 
 <!-- Node Creating Query Modal -->
 <div id="newNodeModal" class="modal fade" role="dialog">
@@ -273,6 +285,10 @@ $(document).ready( function () {
           Task name:<br>
           <input type="text" id="nodeTitle" value="Example task 1">
           <br><br>
+
+          Profession:<br>
+          <select id="professionSelect">
+          </select><br><br>
 
           RACI:<br>
           <div id="nodeRaci">
@@ -293,7 +309,7 @@ $(document).ready( function () {
       <div class="modal-footer">
         <button style="float:left;" type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
         <button id="createNodeButton" style="float:right;" type="button" class="btn btn-primary"
-         onclick="addNewRecNode(<?php echo $curProcess?>)" data-dismiss="modal">Create</button>
+         onclick="addNewRecNode()" data-dismiss="modal">Create</button>
       </div>
     </div>
 

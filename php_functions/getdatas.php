@@ -153,7 +153,7 @@ if ($q=="nodes") {
 
 } else if ($q=="getprocess") {
 	$p=$_REQUEST["n"];
-	$query = $connection->prepare("SELECT processName FROM processes WHERE ID=?");
+	$query = $connection->prepare("SELECT name FROM process_groups WHERE ID=?");
 	$query->bind_param('i',$p);
 	confirm($query);
 	$query->execute();

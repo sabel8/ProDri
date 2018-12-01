@@ -32,11 +32,44 @@ function getProjectManagerHTML(){
 		header("Location: " . $_SERVER['REQUEST_URI']);
 		exit();
 	}
+	$innerhtml="<h2><b>All project and their processes</b></h2>";/*
+	$legacyProjects=getRowsOfQuery("SELECT projectName,pg.name FROM projects p, processes pr,process_groups pg
+	 WHERE pg.ID=pr.processGroupID AND pr.projectID=p.ID AND NOT pg.latestVerProcID=pr.abstractProcessID");
+	if(count($legacyProjects)>=2){
+		$innerhtml.="<div class='alert alert-warning'>These process of your projects has a newer version! <ul>";
+		for($i=0;$i<count($legacyProjects)-1;$i++) {
+			$cells=explode("|",$legacyProjects[$i]);
+			$innerhtml.="<li>".htmlspecialchars((string)($cells[0]." --> ".$cells[1]))."</li>";
+		}
+		$innerhtml.="</ul></div>";
+	} else {
+		$innerhtml.="<div class='alert alert-success'>All of your projects are up to date!</div>";
+	}*/
 
-	$innerhtml="<h2><b>Vacant tasks</b></h2>";
-	$processes = getRowsOfQuery("SELECT processName,p.ID,projects.projectName FROM nodes n,processes p
-			LEFT JOIN projects ON projects.ID=p.projectID
-			WHERE n.processID=p.ID GROUP BY processName"); 
+	$procOfProjects=getRowsOfQuery("SELECT projectName,pg.name,pr.abstractProcessID,pg.latestVerProcID,pr.abstractProcessID
+	FROM projects p, process_groups pg, processes pr
+	WHERE p.ID=pr.projectID AND pg.ID=pr.processGroupID ORDER BY projectName");
+	if(count($procOfProjects)>=2){
+		$innerhtml.=getTableHeader(["Project name","ProcessName","Is up to date?"],"projectOverview");
+		for($i=0;$i<count($procOfProjects)-1;$i++) {
+			$cells=explode("|",$procOfProjects[$i]);
+			$innerhtml.="<tr>";
+			for($n=0;$n<count($cells)-2;$n++){
+				$innerhtml.="<td>".htmlspecialchars($cells[$n])."</td>";
+			}
+			$innerhtml.="<td>".($cells[2]==$cells[3]?"Yes":"No. Newer version is avaliable!")."</td></tr>";
+		}
+		$innerhtml .= "</tbody></table></div>";
+	} else {
+		$innerhtml.="<div class='alert alert-success'>You do not have any (process in your) project!</div>";
+	}
+
+	
+	$innerhtml.="</div><div class='well'><h2><b>Vacant tasks</b></h2>";
+	$processes = getRowsOfQuery("SELECT pg.name,p.ID,pr.projectName FROM nodes n,processes p
+			LEFT JOIN projects pr ON pr.ID=p.projectID
+			LEFT JOIN process_groups PG ON pg.ID=p.processGroupID
+			WHERE n.processID=p.ID GROUP BY pg.name"); 
 	
 	
 	//creating a table if there is any vacant task
@@ -116,23 +149,25 @@ function getProjectManagerHTML(){
 
 function getProcessOwnerHTML(){
 	//setting up recommendation management
-	$innerhtml="<h3>Submitted recommendations</h3><br>";
+	$innerhtml="<h3>Submitted recommendation</h3><br>";
 
-	$recProcesses=getRowsOfQuery("SELECT projectName,processName,proc.ID FROM recommendations recs
-		LEFT JOIN processes proc ON proc.ID=recs.forProcessID
-		LEFT JOIN projects proj ON proj.ID=proc.projectID
-		WHERE NOT recs.status=0
-		GROUP BY processName");
+	$recProcesses=getRowsOfQuery("SELECT proc.name,proc.ID FROM abstract_processes pr
+	LEFT JOIN process_groups proc ON proc.ID=pr.processGroupID
+	WHERE NOT pr.status=0
+	GROUP BY proc.name");
 	if(count($recProcesses)>=2){
 		for($i=0;$i<count($recProcesses)-1;$i++) {
 			$curProcess=explode("|",$recProcesses[$i]);
-			$innerhtml.="<h4><b>".$curProcess[1]."</b> (".$curProcess[0].")</h4>";
-			$recOfProc=getRowsOfQuery("SELECT r.ID,r.title,p.personName,r.status,r.isLive FROM recommendations r, persons p
-				WHERE r.submitterPersonID=p.ID AND r.forProcessID=".$curProcess[2]." AND NOT r.status=0");
-			$innerhtml .= getTableHeader(array("ID","Title","Submitter person","Status","Judgement"),"recsTable".$curProcess[2]);
+			$innerhtml.="<h4><b>".$curProcess[0]."</b></h4>";
+			$recOfProc=getRowsOfQuery("SELECT pr.ID,pr.title,p.personName,pr.status,pr.description,pg.latestVerProcID
+				FROM abstract_processes pr, persons p, process_groups pg
+				WHERE pr.submitterPersonID=p.ID AND pr.processGroupID=".$curProcess[1]." AND NOT pr.status=0 AND pg.ID=pr.processGroupID");
+			$innerhtml .= getTableHeader(array("ID","Title","Submitter person","Status","Description","Judgement"),"recsTable".$curProcess[1]);
 			for($n=0;$n<count($recOfProc)-1;$n++) {
 				$curRec=explode("|",$recOfProc[$n]);
-				$innerhtml.=getTableRecordRow($curRec,(string)("recsTable".$curProcess[2]));
+				print_r($curRec[3]);print_r(" : ".$curRec[5]." ");
+				$innerhtml.=getTableRecordRow($curRec, "recsTable".$curProcess[1]);
+				
 				$innerhtml.="<td class='text-center'>";
 				//setting up the judgement buttons
 				//set up the buttons on submitted recommendations
@@ -141,14 +176,14 @@ function getProcessOwnerHTML(){
 					<button class='btn btn-success' type='button'
 					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},2)'>Accept</button>
 					<button class='btn btn-danger' type='button'
-					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},3)'>Refuse</button>";
+					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},3)'>Refuse and delete</button>";
 				//set up the withdraw button
 				} else if ($curRec[3]==2 && $curRec[4]==1) {
 					$innerhtml.="
 					<button class='btn btn-primary' type='button' onclick='event.stopPropagation();withdraw({$curRec[0]});
 						changeRecommendationStatus({$curRec[0]},1)'>Withdraw</button>";
 				} else {
-					$innerhtml.= "<i>This recommendation is ".getStatusName($curRec[3])."</i>";
+					$innerhtml.= "<i>This recommendation is ".($curRec[0]==$curRec[5]?"live!":getStatusName($curRec[3]))."</i>";
 				}
 				$innerhtml.="</td></tr>";
 			}
@@ -156,28 +191,27 @@ function getProcessOwnerHTML(){
 		}
 	}
 
-	//TASK MANAGING TABLE
+	//TASK MANAGING TABLE (PROFESSION ASSIGNMENT)
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
 	if ($_POST) {
-		//print_r($_POST);
 		// Execute code (such as database updates) here.
 		foreach ($_POST as $key => $value) {
 			global $connection;
 			if (substr($key,0,4)=="raci") {
 				if($value==-1){
-					$query = $connection->prepare("UPDATE nodes SET raci=NULL WHERE ID=?");
+					$query = $connection->prepare("UPDATE abstract_nodes SET raci=NULL WHERE ID=?");
 					$query->bind_param("i",intval(substr($key,4)));
 				} else {
-					$query = $connection->prepare("UPDATE nodes SET raci=? WHERE ID=?");
+					$query = $connection->prepare("UPDATE abstract_nodes SET raci=? WHERE ID=?");
 					$query->bind_param("si",$value,intval(substr($key,4)));
 				}
 			} else if(substr($key,0,12)=="professionOf") {
 				if ($value==-1) {
-					$query=$connection->prepare("UPDATE nodes SET professionID=NULL,responsiblePersonID=NULL WHERE ID=?");
+					$query=$connection->prepare("UPDATE abstract_nodes SET professionID=NULL WHERE ID=?");
 					$query->bind_param("i",intval(substr($key,12)));
 				} else {
-					$query=$connection->prepare("UPDATE nodes SET professionID=? WHERE ID=?");
+					$query=$connection->prepare("UPDATE abstract_nodes SET professionID=? WHERE ID=?");
 					$query->bind_param("ii",$value,intval(substr($key,12)));
 				}
 			}
@@ -193,12 +227,14 @@ function getProcessOwnerHTML(){
 		exit();
 	}
 
-
-	$innerhtml.="<hr style='border-color:lightgrey'><h3>Manage current tasks</h3>";
-	$tasksRow = getRowsOfQuery("SELECT nodeID,txt,professionID,raci,processName,n.ID FROM nodes n, processes p WHERE n.processID=p.ID");
+	//setting up profession assingment section
+	$innerhtml.="<hr style='border-color:lightgrey'><h3>Profession assignment (to the latest version)</h3>";
+	$tasksRow = getRowsOfQuery("SELECT n.nodeID, n.name tasknev, n.professionID, n.raci, pg.name, n.ID
+		FROM abstract_nodes n, process_groups pg, abstract_processes ap 
+		WHERE ap.ID=pg.latestVerProcID AND n.abstractProcessID=ap.ID");
 	if(count($tasksRow)>=2){
 		$innerhtml .= "<form action='".htmlspecialchars($_SERVER["PHP_SELF"])."' method='post'>";
-		$innerhtml.=getTableHeader(array("ID","Task name","Profession","RACI","Process name"),"tasksTable");
+		$innerhtml.=getTableHeader(array("ID","Task name","Profession","RACI","Process group name"),"tasksTable");
 		$professionRow = getRowsOFQuery("SELECT ID,concat(professionName,' (',seniority,')') from professions");
 		for($i=0;$i<count($tasksRow)-1;$i++) {
 			$cells=explode("|",$tasksRow[$i]);

@@ -190,6 +190,39 @@ function deleteEdge(edge){
 	edges.splice(pos,1);
 }
 
+//makes the options for the avaliable professions
+//at the node creating table
+function setupNewNodeModal() {
+	var professions = getProfessions();
+	var form="<option value='-1'></option>";
+	for (var i = 0; i < professions.length-1; i++) {
+		//first element is ID
+		//second element is name
+		//third element is seniority
+		var curProf = professions[i].split(",");
+		form += "<option value=\""+curProf[0]+"\">"+curProf[1]+" ("+curProf[2]+")"+"</option>";
+	}
+	d3.select("#professionSelect").node().innerHTML = form;
+
+	//professionChange();	
+}
+
+function professionChange(){
+	var selectEl = d3.select("#professionSelect").node();
+	var professionID = selectEl.options[selectEl.selectedIndex].value;
+
+	var form="";
+	var persons = getPersonOfProfession(professionID);
+	for (var i = 0; i < persons.length-1; i++) {
+		//first element is ID
+		//second element is name
+		//third element is seniority
+		var curPerson = persons[i].split(",");
+		form += "<option value=\""+curPerson[0]+"\">"+curPerson[1]+"</option>";
+	}
+	d3.select("#personSelect").node().innerHTML = form;
+}
+
 
 //iterates through all nodes and
 //defining it's INPUT and OUTPUT value

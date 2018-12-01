@@ -1,7 +1,7 @@
 //NODE CLASS
 //constructor of the Node element
 class Node {
-	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
+	constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID, desc){
 		this.ID = ID;
 		this.txt = txt;
 		this.x = x;
@@ -43,8 +43,7 @@ class Node {
 			+"; res.person: "+getPersonFromID(this.responsiblePerson)
 			+"; duration: "+this.duration
 			+"; RACI: "+this.RACI
-			+"; Process Name: "+getProcessNameFromID(this.processID)
-			+"; Project Name: "+getProjectNameFromID(this.processID);
+			+"; Process Name: "+getProcessNameFromID(this.processID);
 		}
 
 		this.getRelevantData = function() {
@@ -53,14 +52,14 @@ class Node {
 				return "ID: "+this.ID
 				+"; text: "+this.txt
 				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Project Name: "+getProjectNameFromID(this.processID);
+				+"; Description: \""+this.desc+"\"";
 
 			} else if (this.txt==="FINISH") {
 				return "ID: "+this.ID
 				+"; text: "+this.txt
 				+"; status: "+this.status
 				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Project Name: "+getProjectNameFromID(this.processID);
+				+"; Description: \""+this.desc+"\"";
 
 			} else {
 				return "ID: "+this.ID
@@ -73,7 +72,7 @@ class Node {
 				+"; duration: "+this.duration
 				+"; RACI: "+this.RACI
 				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Project Name: "+getProjectNameFromID(this.processID);
+				+"; Description: \""+this.desc+"\"";
 			}
 		}
 	}
@@ -177,19 +176,6 @@ function getProcessNameFromID(ID) {
 		}
 	};
 	xmlhttp.open("GET", "php_functions/getdatas.php?q=getprocess&n="+ID, false);
-	xmlhttp.send();
-	return result;
-}
-
-function getProjectNameFromID(ID) {
-	var result="";
-	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-			result = this.responseText;
-		}
-	};
-	xmlhttp.open("GET", "php_functions/getdatas.php?q=getproject&n="+ID, false);
 	xmlhttp.send();
 	return result;
 }
@@ -334,12 +320,12 @@ function getValidID(array) {
 
 
 //variables essential for working Graph class
-var shiftKeyPressed,toNode,fromNode,mousePos,selectedEdge,selectedNode,justSpectating;
+var shiftKeyPressed,toNode,fromNode,mousePos,selectedEdge,selectedNode,justSpectating,isAbstract;
 
 //instance must be named "graphObj" !!!!
 class Graph{
 
-	constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpectate){
+	constructor(nodes,edges,allowedCreation,newNodeModalTriggerID,objectInfoModalTriggerID,justSpectate,abstract){
 		this.nodes = nodes;
 		this.edges = edges;
 		this.allowedCreation = allowedCreation;
@@ -347,6 +333,7 @@ class Graph{
 		this.objectInfoModalTriggerID = objectInfoModalTriggerID;
 		this.svg;
 		justSpectating=justSpectate;
+		isAbstract=abstract;
 	}
 
 	getSVGElement(width,height){
@@ -361,6 +348,7 @@ class Graph{
 				if (shiftKeyPressed===true && thisGraph.allowedCreation===true) {
 					d3.select("#"+thisGraph.newNodeModalTriggerID).node().click();
 				}
+				shiftKeyPressed = false;
 			})
 			.on("mousedown", function(d){
 				if (d3.event.shiftKey) {
@@ -563,7 +551,7 @@ class Graph{
 					}
 
 					//setting the current status to the dropdown
-					let statSelect = d3.select("#statusSelect").node();
+					var statSelect = d3.select("#statusSelect").node();
 					switch(d.status) {
 						case 0:
 						statSelect.value = "notStartedOption";
@@ -579,6 +567,8 @@ class Graph{
 				//if selected, deselect it
 				} else {
 					d3.select("#nodeNum"+d.ID).attr("fill",function (d) {
+						if (isAbstract)
+							return "beige";
 						return d.getColor();
 					})
 					selectedNode=null;					
@@ -602,7 +592,7 @@ class Graph{
 		.attr("rx", rectRoundness)
 		.attr("ry", rectRoundness)
 		.attr("fill",function(d){
-			if (justSpectating==true) {
+			if (isAbstract==true) {
 				return "beige";
 			} else {
 				if (selectedNode===d)
