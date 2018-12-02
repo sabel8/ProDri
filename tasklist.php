@@ -5,17 +5,68 @@ $username="John Smith";
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
+  global $connection;
+  $dur=0;$hours=0;$minutes=0;$seconds=0;
+  $durs=array();
   // Execute code (such as database updates) here.
   foreach ($_POST as $key => $value) {
     if ($value!=-1){
-      global $connection;
-      $query = $connection->prepare("UPDATE nodes SET duration=? WHERE ID=?");
-      $query->bind_param("ii",$value,intval(substr($key,7)));
-      if ($query->execute()) {
-      } else {
-        echo "Error while updating records!";
+      if (substr($key,0,7)=="taskDur") {        
+          if (substr($key,0,11)=="taskDurHour") {
+            try {
+              $hours=intval($value);
+              if($hours<0) {
+                //todo --> error message output
+                exit();
+              } else {
+                $durs[substr($key,11)] = $hours*3600;
+              }
+            } catch (Exception $e) {
+                echo 'Caught exception: ',  $e->getMessage(), "\n";
+                //todo --> error message output
+                exit();
+            }
+
+          } else if (substr($key,0,10) == "taskDurMin"){
+            try{
+              $minutes=intval($value);
+              if($minutes<0 or $minutes>59) {
+                //todo --> error message output
+                exit("szar");
+              } else {
+                $durs[substr($key,10)] += $minutes*60;
+              }
+            } catch (Exception $e) {
+                echo 'Caught exception: ',  $e->getMessage(), "\n";
+                //todo --> error message output
+                exit();
+            }
+
+          } else if(substr($key,0,10) == "taskDurSec") {
+            try{
+              $seconds=intval($value);
+              if($seconds<0 or $seconds>59) {
+                //todo --> error message output
+                exit("szar");
+              } else {
+                $durs[substr($key,10)] += $seconds;
+              }
+            } catch (Exception $e) {
+                echo 'Caught exception: ',  $e->getMessage(), "\n";
+                //todo --> error message output
+                exit();
+            }
+          }   
       }
-      
+    }
+  }
+  
+  foreach ($durs as $key => $value) {
+    $query = $connection->prepare("UPDATE nodes SET duration=? WHERE ID=?");
+    $query->bind_param("ii",$value,$key);
+    if ($query->execute()) {
+    } else {
+      echo "Error while updating records!";
     }
   }
   // Redirect to this page.
@@ -25,14 +76,14 @@ if ($_POST) {
 
 function getUserHTML($username) {
 	global $connection;
-  $innerhtml="<div class='row'><div class='col-sm-4'><h3>Processes: (for $username)</h3><hr>";
+  $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes: ($username)</b></h2><hr>";
   //getting the processes which the user is included in
 	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
     FROM abstract_processes ap, process_groups pg,processes p, nodes n
     WHERE n.responsiblePersonID=(SELECT pers.ID FROM persons pers 
     WHERE pers.personName='$username') AND pg.ID=ap.processGroupID
     GROUP BY pg.ID ORDER BY pg.name, title");
-	$innerhtml.="<select style='width:100%' name='involvedProcesses' size='5'>";
+	$innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
 	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
 		$cells=explode("|",$processesInvolvedRows[$i]);
 
@@ -67,13 +118,14 @@ function getUserHTML($username) {
       //cut down last colon
       $edgeString= substr($edgeString,0,-1);
 
-      $innerhtml.="<option onclick=\"title=null;processGroupID=".$cells[2].";createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)
-      \" value='".$cells[0]."'>".$cells[1]."</option>";
+      $innerhtml.="<a class='list-group-item' onclick=\"title=null;processGroupID=".$cells[2].";
+        createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)
+        \" value='".$cells[0]."'>".$cells[1]."</a>";
     }
-	$innerhtml.= "</select>";
+	$innerhtml.= "</div>";
 
   //setting up the log table
-	$innerhtml.="</div><div class='col-sm-8'><h3 style='color:red'><b>Info:</b></h3><hr>";
+	$innerhtml.="</div><div class='col-sm-8'><h2 style='color:red'><b>Info:</b></h2><hr>";
 	$recLogRows=getRowsOfQuery("SELECT p.name,timestamp,text FROM system_message_log log
       LEFT JOIN process_groups p ON log.processID=p.ID
       WHERE (typeID=16 or typeID=17 or typeID=18) 
@@ -138,8 +190,9 @@ function getUserHTML($username) {
     $recomID=$curRec[0];
     $processID=$curRec[4];
     $title=$curRec[3];
-    $options.="<option data-dismiss='modal' onclick=\"var title='$title';processGroupID=$processID;absProcID=$recomID;viewRec2([$nodeString],[$edgeString],
-      $recomID,".$curRec[2].",true,false)\" value='".$curRec[0]."'>".($title==""?"":$title." : ").$curRec[1]." (".$status.")</option>";
+    $options.="<a class='list-group-item' data-dismiss='modal' onclick=\"var title='$title';processGroupID=$processID;
+      absProcID=$recomID;viewRec2([$nodeString],[$edgeString],$recomID,".$curRec[2].",true,false)\" value='".$curRec[0]."'>"
+      .($title==""?"":$title." : ").$curRec[1]." <span class='badge'>".$status."</span></a>";
 	}
 	$numOfRows=count($recs);
 	$actionParam=htmlspecialchars($_SERVER["PHP_SELF"]);
@@ -152,9 +205,9 @@ function getUserHTML($username) {
 				<h4 id="objectName" class="modal-title">Your recommendations</h4>
 			</div>
 			<div class="modal-body">
-					<select style="width:100%" name="recommendationSelect" size="$numOfRows">
+					<div class="list-group" id="recommendationSelect">
 						$options
-					</select>				
+					</div>
 			</div>
 		</div>
 
@@ -183,7 +236,7 @@ $(document).ready( function () {
   <?php echo getUserHTML("John Smith")?>
 </div><div class="container well">
  
-  <h3>Tasks (for: <?php echo $username; ?>)</h3>
+  <h2><b>Tasks (for: <?php echo $username; ?>)</b></h2>
   <?php
   $innerhtml="";
   //getting and setting the tasks table
@@ -222,9 +275,26 @@ $(document).ready( function () {
             $innerhtml.=getRACItext($curTask[$n]);
             break;
           case 8:
-            $innerhtml.='<form action="'.htmlspecialchars($_SERVER["PHP_SELF"]).'" method="post">'.
-                '<input type="number" name="taskDur'.$curTask[count($curTask)-1].'" 
-                style="width:40px" min="1" value="'.($curTask[$n]==NULL?"1":$curTask[$n]).'">'.
+            if ($curTask[$n]==NULL) {
+              $curTaskHour=0;
+              $curTaskMin=0;
+              $curTaskSec=0;
+            } else {
+              $dur = $curTask[$n];
+              $curTaskHour=floor($dur / 3600); $dur -= 3600 * $curTaskHour;
+              $curTaskMin=floor($dur / 60); $dur -= 60 * $curTaskMin;
+              $curTaskSec=$dur;
+            }//'.htmlspecialchars($_SERVER["PHP_SELF"]).'
+            $innerhtml.='<form action="" method="post">'.
+                '<input type="number" id="taskDurHour'.$curTask[count($curTask)-1].'" name="taskDurHour'.$curTask[count($curTask)-1].'"
+                style="width:40px" min="0" value="'.$curTaskHour.'"> hours'.
+
+                '<input type="number" id="taskDurMin'.$curTask[count($curTask)-1].'" name="taskDurMin'.$curTask[count($curTask)-1].'"
+                style="width:40px" min="0" max="59" value="'.$curTaskMin.'"> minutes'.
+
+                '<input type="number" id="taskDurSec'.$curTask[count($curTask)-1].'" name="taskDurSec'.$curTask[count($curTask)-1].'" 
+                style="width:40px" min="0" value="'.$curTaskSec.'"> seconds'.
+
                 ' <input type="submit" class="btn btn-default" value="Submit"></form>';
             break;
           default:

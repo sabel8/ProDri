@@ -2,6 +2,17 @@ var openedCreator=false;
 var graphObj;
 var recomID,processID,title;
 
+$(function(){
+    $('.list-group a').click(function(e) {
+        e.preventDefault();
+
+        $that = $(this);
+
+        $('.list-group a').removeClass('active');
+        $that.addClass('active');
+    });
+})
+
 function createRec(processGroupID,personID,reload) {
 	//getting the title of the recommendation
 	var person = prompt("Title of the recommendtaion", "Place Holder");
