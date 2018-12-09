@@ -2,74 +2,43 @@
 require_once("config.php");
 include(TEMPLATE.DS."header.php");
 $username="John Smith";
+$workdayHours=8;
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
   global $connection;
-  $dur=0;$hours=0;$minutes=0;$seconds=0;
+  $dur=0;$hours=0;
   $durs=array();
   // Execute code (such as database updates) here.
   foreach ($_POST as $key => $value) {
     if ($value!=-1){
-      if (substr($key,0,7)=="taskDur") {        
-          if (substr($key,0,11)=="taskDurHour") {
-            try {
-              $hours=intval($value);
-              if($hours<0) {
-                //todo --> error message output
-                exit();
-              } else {
-                $durs[substr($key,11)] = $hours*3600;
-              }
-            } catch (Exception $e) {
-                echo 'Caught exception: ',  $e->getMessage(), "\n";
-                //todo --> error message output
-                exit();
-            }
-
-          } else if (substr($key,0,10) == "taskDurMin"){
-            try{
-              $minutes=intval($value);
-              if($minutes<0 or $minutes>59) {
-                //todo --> error message output
-                exit("szar");
-              } else {
-                $durs[substr($key,10)] += $minutes*60;
-              }
-            } catch (Exception $e) {
-                echo 'Caught exception: ',  $e->getMessage(), "\n";
-                //todo --> error message output
-                exit();
-            }
-
-          } else if(substr($key,0,10) == "taskDurSec") {
-            try{
-              $seconds=intval($value);
-              if($seconds<0 or $seconds>59) {
-                //todo --> error message output
-                exit("szar");
-              } else {
-                $durs[substr($key,10)] += $seconds;
-              }
-            } catch (Exception $e) {
-                echo 'Caught exception: ',  $e->getMessage(), "\n";
-                //todo --> error message output
-                exit();
-            }
-          }   
+      if (substr($key,0,11) == "taskDurHour"){
+        $query = $connection->prepare("UPDATE nodes SET duration=?,lastUpdateTime=NOW() WHERE ID=?");
+        $query->bind_param("ii",$value,substr($key,11));
+        if ($query->execute()) {
+        } else {
+          echo "Error while updating records!";
+        }
+      } else if (substr($key,0,9)=="startTask" and $value="Start"){
+        $query = $connection->prepare("UPDATE nodes SET startTime=NOW(),lastUpdateTime=NOW() WHERE ID=?");
+        $taskID=substr($key,9);
+        $query->bind_param("i",$taskID);
+        if ($query->execute()) {
+        } else {
+          echo "Error while updating records!";
+        }
+      } else if (substr($key,0,10)=="finishTask" and $value="Finish"){
+        $query = $connection->prepare("UPDATE nodes SET finishTime=NOW(),lastUpdateTime=NOW() WHERE ID=?");
+        $taskID=substr($key,10);
+        $query->bind_param("i",$taskID);
+        if ($query->execute()) {
+        } else {
+          echo "Error while updating records!";
+        }
       }
     }
   }
-  
-  foreach ($durs as $key => $value) {
-    $query = $connection->prepare("UPDATE nodes SET duration=? WHERE ID=?");
-    $query->bind_param("ii",$value,$key);
-    if ($query->execute()) {
-    } else {
-      echo "Error while updating records!";
-    }
-  }
-  // Redirect to this page.
+  // Redirect to this page, clearing the POST array
   header("Location: " . $_SERVER['REQUEST_URI']);
   exit();
 }
@@ -95,7 +64,7 @@ function getUserHTML($username) {
 			$curNode = explode("|",$nodesOfProc[$n]);
 			$nodeString.="[";
 			for($e=0;$e<count($curNode);$e++){
-				$nodeString.='\''.$curNode[$e].'\',';
+				$nodeString.='\''.htmlspecialchars($curNode[$e]).'\',';
 			}
 			//cut down last colon
 			$nodeString = substr($nodeString,0,-1)."],";
@@ -140,7 +109,7 @@ function getUserHTML($username) {
         switch ($n) {
           case 0:$innerhtml.=($curLog[$n]==""?"<i>NO TITLE</i>":$curLog[$n]);break;
           default:
-            $innerhtml.=$curLog[$n];
+            $innerhtml.=htmlspecialchars($curLog[$n]);
         }
         $innerhtml.="</td>";
       }
@@ -161,7 +130,7 @@ function getUserHTML($username) {
   <span class='glyphicon glyphicon-save'></span> Create recommendation
   </button>
   
-  <button id='saveRecButton' type='button' class='btn btn-success' style='display:none' onclick='updateElementsOfRec(absProcID)'>
+  <button id='saveRecButton' type='button' class='btn btn-success' style='display:none' onclick='updateElementsOfRec(absProcID,true)'>
   <span class='glyphicon glyphicon-save'></span> Save recommendation
   </button>
 
@@ -177,7 +146,9 @@ function getUserHTML($username) {
 	$recs=getRowsOfQuery("SELECT p.ID,pg.name,p.status,p.title,p.processGroupID FROM abstract_processes p,process_groups pg 
     WHERE p.processGroupID=pg.ID");
 	for ($i=0;$i<count($recs)-1;$i++) {
-		$curRec=explode("|",$recs[$i]);
+    $curRec=explode("|",$recs[$i]);
+    //setting the strings xss safe
+    $curRec = array_map("htmlspecialchars", $curRec);
 		switch($curRec[2]){
 			case 0:$status="Not yet submitted";break;
 			case 1:$status="Submitted, but not reviewed";break;
@@ -241,26 +212,26 @@ $(document).ready( function () {
   $innerhtml="";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
-     concat(prof.professionName,' (',prof.seniority,')'),'under development', n.status, n.RACI, n.duration,'under dev','under development.'
-	 ,'under development..','under development...','under development....',n.priority,'sample log','blank','two buttons..',n.ID
+     concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,'planned start',n.startTime
+	 ,'Planned finish..','Actual finish...',n.lastUpdateTime,n.priority,'sys log','dels','two buttons..',n.ID
 		FROM nodes AS n
 		LEFT JOIN persons rp
 			ON n.responsiblePersonID=rp.ID 
-		LEFT JOIN processes p
-			ON n.processID=p.ID
+		LEFT JOIN processes process
+			ON n.processID=process.ID
 		LEFT JOIN projects proj
-			ON p.projectID=proj.ID
+			ON process.projectID=proj.ID
     LEFT JOIN professions prof
       ON prof.ID=n.professionID
     LEFT JOIN abstract_processes ap
-      ON ap.ID=p.abstractProcessID
+      ON ap.ID=process.abstractProcessID
     LEFT JOIN process_groups pg
-      ON pg.latestVerProcID=ap.ID
+      ON process.processGroupID=pg.ID
 		WHERE rp.personName='".$username."'
     ORDER BY n.status DESC, n.priority DESC");
   if (count($tasks)>1){
     $innerhtml.=getTableHeader(array("ID","Name","Description","Process (project)","Profession","Inputs",
-	  "Status","RACI","Estimated duration","Planned start","Actual start","Planned finish","Actual finish",
+	  "Status","RACI","Estimated duration (1workday = ".$workdayHours."hrs)","Planned start","Actual start","Planned finish","Actual finish",
 	  "Last update at","Priority","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
       $curTask=explode("|",$tasks[$i]);
@@ -269,36 +240,43 @@ $(document).ready( function () {
       for ($n=0;$n<count($curTask)-1;$n++) {
         $innerhtml.="<td>";
         switch ($n) {
+          //status
           case 6:
             $innerhtml.=getStatusText($curTask[$n]);break;
+          //raci
           case 7:
             $innerhtml.=getRACItext($curTask[$n]);
             break;
+          //duration
           case 8:
             if ($curTask[$n]==NULL) {
               $curTaskHour=0;
-              $curTaskMin=0;
-              $curTaskSec=0;
             } else {
-              $dur = $curTask[$n];
-              $curTaskHour=floor($dur / 3600); $dur -= 3600 * $curTaskHour;
-              $curTaskMin=floor($dur / 60); $dur -= 60 * $curTaskMin;
-              $curTaskSec=$dur;
+              $curTaskHour=$curTask[$n];
             }//'.htmlspecialchars($_SERVER["PHP_SELF"]).'
             $innerhtml.='<form action="" method="post">'.
+
                 '<input type="number" id="taskDurHour'.$curTask[count($curTask)-1].'" name="taskDurHour'.$curTask[count($curTask)-1].'"
-                style="width:40px" min="0" value="'.$curTaskHour.'"> hours'.
-
-                '<input type="number" id="taskDurMin'.$curTask[count($curTask)-1].'" name="taskDurMin'.$curTask[count($curTask)-1].'"
-                style="width:40px" min="0" max="59" value="'.$curTaskMin.'"> minutes'.
-
-                '<input type="number" id="taskDurSec'.$curTask[count($curTask)-1].'" name="taskDurSec'.$curTask[count($curTask)-1].'" 
-                style="width:40px" min="0" value="'.$curTaskSec.'"> seconds'.
+                style="width:50px" min="0" value="'.$curTaskHour.'"> hours<br>'.
 
                 ' <input type="submit" class="btn btn-default" value="Submit"></form>';
             break;
+          //actual start
+          case 10:
+            $innerhtml .= ($curTask[$n]==null ? "Not yet started" : $curTask[$n]);
+            break;
+          //start/finish button
+          case 17:
+            $innerhtml.="<form action='' method='post'>";
+            if($curTask[10]==null) {
+              $innerhtml .= "<input class='btn btn-success' type='submit' name='startTask".$curTask[count($curTask)-1]."' value='Start'>";
+            } else {
+              $innerhtml .= "<input class='btn btn-danger' type='submit' name='finishTask".$curTask[count($curTask)-1]."' value='Finish'>";
+            }
+            $innerhtml.="</form>";
+            break;
           default:
-            $innerhtml.=$curTask[$n];
+            $innerhtml.=htmlspecialchars($curTask[$n]);
         }
         $innerhtml.="</td>";
       }

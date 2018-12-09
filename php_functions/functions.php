@@ -29,6 +29,7 @@ function fetch_array($result) {
 
 //returns the array of rows of the query result
 //saves boilercode copying, designed for selections!
+//safe from xss
 //param $queryTxt = the SQL statement itself
 function getRowsOfQuery($queryTxt){
 	//print_r($queryTxt."<br><br>");
@@ -37,11 +38,21 @@ function getRowsOfQuery($queryTxt){
 	confirm($query);
 	$query->execute();
 	$result = $query->get_result();
+	print_r(mysqli_error($connection));
 	$res="";
 	while ($row = $result->fetch_assoc()){
-		$res = $res . implode("|",$row) .";";
+		/*print_r($row);
+		print_r("row <br><br>");*/
+		foreach ($row as $key => $value) {
+			$res .= htmlspecialchars($value)."|";
+		}
+		$res=rtrim($res,"|")."~";
 	}
-	return explode(";", $res);
+	/*print_r($res);*/
+	$array= explode("~",$res);
+	/*print_r($array);
+	print_r("<br>res<br><br>");*/
+	return $array;
 }
 
 //returns the header of the table, and opened body tag
@@ -184,69 +195,11 @@ function getColorClass($status) {
 		case '3':
 			$colorClass="danger";
 			break;
+		default:
+			print_r("ERROR at functions/getColorClass function!");
+			$colorClass="";
 	}
 	return $colorClass;
-}
-
-//returns the html of a recommendation row
-//on click the preview shows up
-//param $cells = array of the values in table cells
-function getTableRecordRow($cells,$tableID) {
-	$innerhtml="";
-	global $connection;
-	//query for getting the nodes of the recommendation
-	$query = $connection->prepare("SELECT n.nodeID,n.name,n.xCord,n.yCord,n.professionID,n.raci,n.description,p.processGroupID
-		FROM abstract_nodes n, abstract_processes p WHERE n.abstractProcessID=?");
-	$query->bind_param('i',$cells[0]);
-	confirm($query);
-	$query->execute();
-	$result = $query->get_result();
-	$nodes="";
-	while ($row = $result->fetch_assoc()){
-		$nodes .= "['".implode("','",$row)."'],";
-	}
-	//removing the last unnecessary colon
-	$nodes=rtrim($nodes,",");
-
-	//query for getting the edges of the recommendation
-	$query = $connection->prepare("SELECT r.ID,r.fromNodeID,r.toNodeID
-		FROM abstract_edges r WHERE r.abstractProcessID=?");
-	$query->bind_param('i',$cells[0]);
-	confirm($query);
-	$query->execute();
-	$result = $query->get_result();
-	$edges="";
-	while ($row = $result->fetch_assoc()){
-		$edges .= "['".implode("','",$row)."'],";
-	}
-	//removing the last unnecessary colon
-	$edges=rtrim($edges,",");
-
-	$colorClass=getColorClass($cells[3]);
-
-	$innerhtml.="<tr class='{$colorClass}' style='cursor:pointer' 
-		onclick=\"viewRecommendation({$cells[0]},[{$nodes}],[{$edges}],'$tableID')\">";
-		//viewRec2([$nodes],[$edges],{$cells[0]},{$cells[2]},false,true,'".$tableID."')
-	for ($n=0;$n < count($cells)-1;$n++){
-		$innerhtml.='<td class="text-center">';
-		switch($n){
-			case 1:
-				$innerhtml.=($cells[$n]==""?"<i>NO TITLE</i>":htmlspecialchars($cells[$n]));break;
-			case 3:
-				//if this is the live version
-				if($cells[0]==$cells[5]) {
-					$innerhtml.="Live, latest version";
-				} else {
-					$innerhtml.=getStatusName($cells[3]);
-				}
-				break;
-			case 5:break;
-			default:
-				$innerhtml.=htmlspecialchars($cells[$n]);
-		}
-		$innerhtml.="</td>";
-	}
-	return $innerhtml;
 }
 
 //return an option element with the raci character in value

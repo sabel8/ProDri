@@ -32,32 +32,20 @@ function getProjectManagerHTML(){
 		header("Location: " . $_SERVER['REQUEST_URI']);
 		exit();
 	}
-	$innerhtml="<h2><b>All project and their processes</b></h2>";/*
-	$legacyProjects=getRowsOfQuery("SELECT projectName,pg.name FROM projects p, processes pr,process_groups pg
-	 WHERE pg.ID=pr.processGroupID AND pr.projectID=p.ID AND NOT pg.latestVerProcID=pr.abstractProcessID");
-	if(count($legacyProjects)>=2){
-		$innerhtml.="<div class='alert alert-warning'>These process of your projects has a newer version! <ul>";
-		for($i=0;$i<count($legacyProjects)-1;$i++) {
-			$cells=explode("|",$legacyProjects[$i]);
-			$innerhtml.="<li>".htmlspecialchars((string)($cells[0]." --> ".$cells[1]))."</li>";
-		}
-		$innerhtml.="</ul></div>";
-	} else {
-		$innerhtml.="<div class='alert alert-success'>All of your projects are up to date!</div>";
-	}*/
-
-	$procOfProjects=getRowsOfQuery("SELECT projectName,pg.name,pr.abstractProcessID,pg.latestVerProcID,pr.abstractProcessID
-	FROM projects p, process_groups pg, processes pr
-	WHERE p.ID=pr.projectID AND pg.ID=pr.processGroupID ORDER BY projectName");
+	$innerhtml="<h2><b>All project and their processes</b></h2>";
+	$procOfProjects=getRowsOfQuery("SELECT projectName,pg.name,ap.title,pr.ID,pr.abstractProcessID,pg.latestVerProcID
+	FROM projects p, process_groups pg, processes pr,abstract_processes ap
+	WHERE p.ID=pr.projectID AND pg.ID=pr.processGroupID AND pr.abstractProcessID=ap.ID ORDER BY projectName");
 	if(count($procOfProjects)>=2){
-		$innerhtml.=getTableHeader(["Project name","ProcessName","Is up to date?"],"projectOverview");
+		$innerhtml.=getTableHeader(["Project name","Process","Name","Is up to date?"],"projectOverview");
 		for($i=0;$i<count($procOfProjects)-1;$i++) {
 			$cells=explode("|",$procOfProjects[$i]);
-			$innerhtml.="<tr>";
-			for($n=0;$n<count($cells)-2;$n++){
-				$innerhtml.="<td>".htmlspecialchars($cells[$n])."</td>";
+			/*$innerhtml.=getTableRecordRowTag($cells[3],"projectOverview",$cells[2]==$cells[3]?"success":"warning");*/
+			$innerhtml.=getProcessRowTag($cells[3],"projectOverview",$cells[2]==$cells[3]?"success":"warning");
+			for($n=0;$n<count($cells)-3;$n++){
+				$innerhtml.="<td>".$cells[$n]."</td>";
 			}
-			$innerhtml.="<td>".($cells[2]==$cells[3]?"Yes":"No. Newer version is avaliable!")."</td></tr>";
+			$innerhtml.="<td>".($cells[2]==$cells[3]?"Yes":"No. Newer version is avaliable!<i> Ide még kéne valami</i>")."</td></tr>";
 		}
 		$innerhtml .= "</tbody></table></div>";
 	} else {
@@ -65,10 +53,10 @@ function getProjectManagerHTML(){
 	}
 
 	
-	$innerhtml.="</div><div class='well'><h2><b>Vacant tasks</b></h2>";
+	$innerhtml.="</div><div class='well'><h2><b>Task assignment</b></h2>";
 	$processes = getRowsOfQuery("SELECT pg.name,p.ID,pr.projectName FROM nodes n,processes p
 			LEFT JOIN projects pr ON pr.ID=p.projectID
-			LEFT JOIN process_groups PG ON pg.ID=p.processGroupID
+			LEFT JOIN process_groups pg ON pg.ID=p.processGroupID
 			WHERE n.processID=p.ID GROUP BY pg.name"); 
 	
 	
@@ -148,49 +136,6 @@ function getProjectManagerHTML(){
 }
 
 function getProcessOwnerHTML(){
-	//setting up recommendation management
-	$innerhtml="<h3>Submitted recommendation</h3><br>";
-
-	$recProcesses=getRowsOfQuery("SELECT proc.name,proc.ID FROM abstract_processes pr
-	LEFT JOIN process_groups proc ON proc.ID=pr.processGroupID
-	WHERE NOT pr.status=0
-	GROUP BY proc.name");
-	if(count($recProcesses)>=2){
-		for($i=0;$i<count($recProcesses)-1;$i++) {
-			$curProcess=explode("|",$recProcesses[$i]);
-			$innerhtml.="<h4><b>".$curProcess[0]."</b></h4>";
-			$recOfProc=getRowsOfQuery("SELECT pr.ID,pr.title,p.personName,pr.status,pr.description,pg.latestVerProcID
-				FROM abstract_processes pr, persons p, process_groups pg
-				WHERE pr.submitterPersonID=p.ID AND pr.processGroupID=".$curProcess[1]." AND NOT pr.status=0 AND pg.ID=pr.processGroupID");
-			$innerhtml .= getTableHeader(array("ID","Title","Submitter person","Status","Description","Judgement"),"recsTable".$curProcess[1]);
-			for($n=0;$n<count($recOfProc)-1;$n++) {
-				$curRec=explode("|",$recOfProc[$n]);
-				print_r($curRec[3]);print_r(" : ".$curRec[5]." ");
-				$innerhtml.=getTableRecordRow($curRec, "recsTable".$curProcess[1]);
-				
-				$innerhtml.="<td class='text-center'>";
-				//setting up the judgement buttons
-				//set up the buttons on submitted recommendations
-				if ($curRec[3]==1) {
-					$innerhtml.="
-					<button class='btn btn-success' type='button'
-					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},2)'>Accept</button>
-					<button class='btn btn-danger' type='button'
-					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},3)'>Refuse and delete</button>";
-				//set up the withdraw button
-				} else if ($curRec[3]==2 && $curRec[4]==1) {
-					$innerhtml.="
-					<button class='btn btn-primary' type='button' onclick='event.stopPropagation();withdraw({$curRec[0]});
-						changeRecommendationStatus({$curRec[0]},1)'>Withdraw</button>";
-				} else {
-					$innerhtml.= "<i>This recommendation is ".($curRec[0]==$curRec[5]?"live!":getStatusName($curRec[3]))."</i>";
-				}
-				$innerhtml.="</td></tr>";
-			}
-			$innerhtml .= "</tbody></table></div>";
-		}
-	}
-
 	//TASK MANAGING TABLE (PROFESSION ASSIGNMENT)
 	//if post is set, update database then clear post
 	//avoiding repetitive form submission
@@ -219,7 +164,7 @@ function getProcessOwnerHTML(){
 			if ($query->execute()) {
 				echo mysqli_error($connection);
 			} else {
-				echo "Error while updating records!";
+				echo "Error while updating records! ".mysqli_error($connection)."<br>";
 			}
 		}
 		// Redirect to this page.
@@ -227,8 +172,71 @@ function getProcessOwnerHTML(){
 		exit();
 	}
 
+
+	//setting up recommendation management
+	$innerhtml="<h2><b>Submitted recommendations</b></h2><br>";
+
+	$recProcesses=getRowsOfQuery("SELECT proc.name,proc.ID FROM abstract_processes pr
+	LEFT JOIN process_groups proc ON proc.ID=pr.processGroupID
+	WHERE NOT pr.status=0
+	GROUP BY proc.name");
+	if(count($recProcesses)>=2){
+		for($i=0;$i<count($recProcesses)-1;$i++) {
+			$curProcess=explode("|",$recProcesses[$i]);
+			$innerhtml.="<h4><b>".$curProcess[0]."</b></h4>";
+			$recOfProc=getRowsOfQuery("SELECT pr.ID,pr.title,p.personName,pr.status,pr.description,pg.latestVerProcID
+				FROM abstract_processes pr, persons p, process_groups pg
+				WHERE pr.submitterPersonID=p.ID AND pr.processGroupID=".$curProcess[1]." AND NOT pr.status=0 AND pg.ID=pr.processGroupID");
+			$innerhtml .= getTableHeader(array("ID","Title","Submitter person","Status","Description","Judgement"),"recsTable".$curProcess[1]);
+			for($n=0;$n<count($recOfProc)-1;$n++) {
+				$curRec=explode("|",$recOfProc[$n]);
+				$innerhtml.=getTableRecordRowTag($curRec[0], "recsTable".$curProcess[1],getColorClass($curRec[3]));
+				for ($j=0;$j < count($curRec)-1;$j++){
+					$innerhtml.='<td class="text-center">';
+					switch($j){
+						case 1:
+							$innerhtml.=($curRec[$j]==""?"<i>NO TITLE</i>":$curRec[$j]);break;
+						case 3:
+							//if this is the live version
+							if($curRec[0]==$curRec[5]) {
+								$innerhtml.="Live, latest version";
+							} else {
+								$innerhtml.=getStatusName($curRec[3]);
+							}
+							break;
+						case 5:break;
+						default:
+							$innerhtml.=$curRec[$j];
+					}
+					$innerhtml.="</td>";
+				}
+				
+				$innerhtml.="<td class='text-center'>";
+				//setting up the judgement buttons
+				//set up the buttons on submitted recommendations
+				if ($curRec[3]==1) {
+					$innerhtml.="
+					<button class='btn btn-success' type='button'
+					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},2)'>Accept</button>
+					<button class='btn btn-danger' type='button'
+					onclick='event.stopPropagation();changeRecommendationStatus({$curRec[0]},3)'>Refuse and delete</button>";
+				//set up the withdraw button
+				} else if ($curRec[3]==2 && $curRec[4]==1) {
+					$innerhtml.="
+					<button class='btn btn-primary' type='button' onclick='event.stopPropagation();withdraw({$curRec[0]});
+						changeRecommendationStatus({$curRec[0]},1)'>Withdraw</button>";
+				} else {
+					$innerhtml.= "<i>This recommendation is ".($curRec[0]==$curRec[5]?"live!":getStatusName($curRec[3]))."</i>";
+				}
+				$innerhtml.="</td></tr>";
+			}
+			$innerhtml .= "</tbody></table></div>";
+		}
+	}
+
+
 	//setting up profession assingment section
-	$innerhtml.="<hr style='border-color:lightgrey'><h3>Profession assignment (to the latest version)</h3>";
+	$innerhtml.="<hr style='border-color:lightgrey'><h2><b>Profession assignment</b> (to the latest version)</h2>";
 	$tasksRow = getRowsOfQuery("SELECT n.nodeID, n.name tasknev, n.professionID, n.raci, pg.name, n.ID
 		FROM abstract_nodes n, process_groups pg, abstract_processes ap 
 		WHERE ap.ID=pg.latestVerProcID AND n.abstractProcessID=ap.ID");
@@ -245,7 +253,6 @@ function getProcessOwnerHTML(){
 				switch($n){
 					//getting the profession and the seniority
 					case 2:
-						
 						//$innerhtml .= explode(",",$professionRow[0])[0];
 						if ($cells[1]!="START" and $cells[1]!="FINISH") {
 							$innerhtml.="<select name='professionOf".$cells[5]."'>";
@@ -262,7 +269,6 @@ function getProcessOwnerHTML(){
 					case 3:
 						if ($cells[1]!="START" and $cells[1]!="FINISH") {
 							$innerhtml.="<select name='raci".$cells[5]."'>";
-							$innerhtml.="<option value='-1'></option>";
 							$innerhtml.=getRACIoption($cells[3],"r");
 							$innerhtml.=getRACIoption($cells[3],"a");
 							$innerhtml.=getRACIoption($cells[3],"c");
@@ -286,6 +292,84 @@ function getProcessOwnerHTML(){
 
 
 	return $innerhtml;
+}
+
+//returns the html of a recommendation row opening tag
+//on click the preview shows up
+//abstractProcessID should be the processID what will be shown 
+function getTableRecordRowTag($abstractProcessID,$tableID,$colorClass) {
+	$returning="";
+	global $connection;
+	//query for getting the nodes of the recommendation
+	$query = $connection->prepare("SELECT n.nodeID,n.name,n.xCord,n.yCord,n.professionID,n.raci,n.description,p.processGroupID
+		FROM abstract_nodes n, abstract_processes p WHERE n.abstractProcessID=? GROUP BY n.ID");
+	$query->bind_param('i',$abstractProcessID);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	$nodes="";
+	while ($row = $result->fetch_assoc()){
+		$nodes .= "['".implode("','",$row)."'],";
+	}
+	//removing the last unnecessary colon
+	$nodes=rtrim($nodes,",");
+
+	//query for getting the edges of the recommendation
+	$query = $connection->prepare("SELECT r.ID,r.fromNodeID,r.toNodeID
+		FROM abstract_edges r WHERE r.abstractProcessID=?");
+	$query->bind_param('i',$abstractProcessID);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	$edges="";
+	while ($row = $result->fetch_assoc()){
+		$edges .= "['".implode("','",$row)."'],";
+	}
+	//removing the last unnecessary colon
+	$edges=rtrim($edges,",");
+
+	$returning.="<tr class='{$colorClass}' style='cursor:pointer' 
+		onclick=\"viewRecommendation({$abstractProcessID},[{$nodes}],[{$edges}],'$tableID')\">";
+	return $returning;
+}
+
+//returns the html of a process row opening tag
+//on click the preview shows up
+function getProcessRowTag($processID,$tableID,$colorClass){
+	$returning="";
+	global $connection;
+	//query for getting the nodes of the recommendation
+	$query = $connection->prepare("SELECT n.nodeID,n.txt,n.xCord,n.yCord,n.status,n.professionID,n.responsiblePersonID,
+		n.duration,n.raci,n.description,p.processGroupID
+		FROM nodes n, processes p,process_groups pg WHERE n.processID=? AND pg.ID=p.processGroupID GROUP BY n.ID");
+	$query->bind_param('i',$processID);
+	$query->execute();
+	confirm($query);
+	$result = $query->get_result();
+	$nodes="";
+	while ($row = $result->fetch_assoc()){
+		$nodes .= "['".implode("','",$row)."'],";
+	}
+	//removing the last unnecessary colon
+	$nodes=rtrim($nodes,",");
+
+	//query for getting the edges of the recommendation
+	$query = $connection->prepare("SELECT e.ID,e.fromNodeID,e.toNodeID
+		FROM edges e, processes p,process_groups pg WHERE e.processID=? AND pg.ID=p.processGroupID GROUP BY e.ID");
+	$query->bind_param('i',$processID);
+	confirm($query);
+	$query->execute();
+	$result = $query->get_result();
+	$edges="";
+	while ($row = $result->fetch_assoc()){
+		$edges .= "['".implode("','",$row)."'],";
+	}
+	//removing the last unnecessary colon
+	$edges=rtrim($edges,",");
+
+	$returning.="<tr class='{$colorClass}' style='cursor:pointer' 
+		onclick=\"viewProcess({$processID},[{$nodes}],[{$edges}],'$tableID')\">";
+	return $returning;
 }
 ?>
 

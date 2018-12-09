@@ -2,6 +2,8 @@ var openedCreator=false;
 var graphObj;
 var recomID,processID,title;
 
+//sets a beautiful ble background for active
+//selected list item
 $(function(){
     $('.list-group a').click(function(e) {
         e.preventDefault();
@@ -37,7 +39,7 @@ function createRec(processGroupID,personID,reload) {
 	console.log("newProcessID="+newProcessID);
 
 	//appending the nodes and the edges to the related recommendation
-	updateElementsOfRec(newProcessID);
+	updateElementsOfRec(newProcessID,false);
 
 	if (reload==true){
 		location.reload(true);
@@ -47,7 +49,7 @@ function createRec(processGroupID,personID,reload) {
 
 //sets the current nodes and edges array
 //to the recommendation is param
-function updateElementsOfRec(absProcessID) {
+function updateElementsOfRec(absProcessID,reload) {
 	console.log(runInsert(["absProcNodeDel",absProcessID]));
 	console.log(runInsert(["absProcEdgeDel",absProcessID]));
 
@@ -61,6 +63,9 @@ function updateElementsOfRec(absProcessID) {
 		var c = graphObj.edges[i];
 		console.log(runInsert(["recEdges",c.fromNodeID,c.toNodeID,absProcessID]));
 	}
+	if(reload==true) {
+		location.reload(true);
+	}
 }
 
 function withdraw(recomID){
@@ -73,6 +78,37 @@ function withdraw(recomID){
 		}
 	};
 	xmlhttp.send("q=withdraw&p="+recomID);
+}
+
+function viewProcess(recID,recNodes,recEdges,tableID) {
+	closeGraph();
+	var realNodes=[];
+	for (var i = 0; i < recNodes.length; i++) {
+		var c = recNodes[i];
+		//query nodeID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,raci,description,p.processGroupID
+		//nodes constr(ID,txt,x, y,  status, knowledgeArea, responsiblePerson, duration, RACI, processID, desc)
+		realNodes[i] = new Node(Number(c[0]),c[1],Number(c[2]),Number(c[3]),Number(c[4]),Number(c[5]),Number(c[6]),Number(c[7]),Number(c[9]),c[8]);
+	}
+
+	var realEdges=[];
+	for (var i = 0; i < recEdges.length; i++) {
+		var c = recEdges[i];
+		realEdges[i]=new Edge(Number(c[0]),Number(c[1]),Number(c[2]));
+	}
+	graphObj = new Graph(realNodes,realEdges,false,"newNodeModalTrigger","objectInfoModalTrigger",true,false);
+	var closeButton=document.createElement("button");
+	d3.select(closeButton)
+		.attr("id","closeSVGButton")
+		.attr("style","float:right;margin-bottom:20px")
+		.on("click",function(){
+			closeGraph();
+		})
+		.attr("class","btn btn-danger")
+		.html('<span class="glyphicon glyphicon-remove"></span>');
+	var parent = d3.select("#"+tableID).node().parentNode;
+	insertAfter(closeButton , parent);
+	insertAfter(graphObj.getSVGElement(parent.offsetWidth,400) , d3.select("#closeSVGButton").node());
+	redraw();
 }
 
 function viewRecommendation(recID,recNodes,recEdges,tableID) {
@@ -206,6 +242,7 @@ function createRecommendation2(nodesParam,edgesParam,processID){
 	d3.select("#saveRecButton").attr("style","display:none");
 	d3.select("#submitRecButton").attr("style","display:none");
 	d3.select("#createRecButton").attr("style","display:inline-block");
+	d3.select("#createRecButton").html("<span class='glyphicon glyphicon-save'></span> Create recommendation");
 	graphObj.redraw();
 }
 
@@ -229,14 +266,18 @@ function viewRec2(nodesParam,edgesParam,recomID,status,allowedCreation,spectateM
 	
 	d3.select("svg").remove();
 	var parent = d3.select("#manageEditorBody").node();
-	d3.select("#createRecButton").attr("style","display:none");
+	d3.select("#createRecButton").attr("style","display:inline-block");
+	d3.select("#createRecButton").html("<span class='glyphicon glyphicon-save'></span> Save recommendation as...");
 	if (status==1){
+		//submitted
 		d3.select("#saveRecButton").attr("style","display:inline-block");
 		d3.select("#submitRecButton").attr("style","display:none");
 	} else if (status==0) {
+		//not submitted but created
 		d3.select("#saveRecButton").attr("style","display:inline-block");
 		d3.select("#submitRecButton").attr("style","display:inline-block");
 	} else {
+		//submitted and accepted
 		d3.select("#saveRecButton").attr("style","display:none");
 		d3.select("#submitRecButton").attr("style","display:none");
 	}

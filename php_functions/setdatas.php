@@ -199,6 +199,7 @@ if ($q=="insert") {
 			}
 		} else {
 			echo "Error1";
+			
 		}
 	} else {
 	    echo "Error while recommendation nodes deletion!";
