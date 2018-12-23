@@ -328,7 +328,7 @@ function getTableRecordRowTag($abstractProcessID,$tableID,$colorClass) {
 	//removing the last unnecessary colon
 	$edges=rtrim($edges,",");
 
-	$returning.="<tr class='{$colorClass}' style='cursor:pointer' 
+	$returning.="<tr id='recom{$abstractProcessID}' class='{$colorClass}' style='cursor:pointer' 
 		onclick=\"viewRecommendation({$abstractProcessID},[{$nodes}],[{$edges}],'$tableID')\">";
 	return $returning;
 }
@@ -367,7 +367,7 @@ function getProcessRowTag($processID,$tableID,$colorClass){
 	//removing the last unnecessary colon
 	$edges=rtrim($edges,",");
 
-	$returning.="<tr class='{$colorClass}' style='cursor:pointer' 
+	$returning.="<tr id='process{$processID}' class='{$colorClass}' style='cursor:pointer' 
 		onclick=\"viewProcess({$processID},[{$nodes}],[{$edges}],'$tableID')\">";
 	return $returning;
 }

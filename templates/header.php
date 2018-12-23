@@ -28,6 +28,13 @@ if (isset($_GET["auth"])){
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 	<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 	
+	<!-- APIs for the calendar -->
+	<link rel='stylesheet' href='fullcalendar/fullcalendar.css' />
+	<script src='scripts/moment.min.js'></script>
+	<script src='fullcalendar/fullcalendar.js'></script>
+	<script src='fullcalendar/locale/en-gb.js'></script>
+	<script src="datetimeselector/build/js/bootstrap-datetimepicker.min.js"></script>
+	<link href="datetimeselector/build/css/bootstrap-datetimepicker.css" rel="stylesheet">
 
 	<!-- Latest compiled JavaScript -->
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -40,6 +47,7 @@ if (isset($_GET["auth"])){
 	<script src="scripts/graphFunctions.js"></script>
 	<script src="scripts/externalDataFunctions.js"></script>
 	<script src="scripts/fetchGraphData.js"></script>
+	<script src="scripts/schedule.js"></script>
 	<script type="text/javascript">
 		//desing values for svg elements
 		//speaks for themselves...
@@ -108,6 +116,8 @@ if (isset($_GET["auth"])){
 						} else {
 							echo "Manage recommendations";
 						}
+					} else {
+						echo "<li><a href='/prodri/schedule.php'>My schedule</a>";
 					} ?>
 					
 					</a></li>

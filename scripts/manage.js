@@ -1,8 +1,9 @@
-var openedCreator=false;
+var openedCreatorID=null;
+var originalColor,prevRowID;
 var graphObj;
 var recomID,processID,title;
 
-//sets a beautiful ble background for active
+//sets a beautiful blue background for active
 //selected list item
 $(function(){
     $('.list-group a').click(function(e) {
@@ -80,8 +81,22 @@ function withdraw(recomID){
 	xmlhttp.send("q=withdraw&p="+recomID);
 }
 
-function viewProcess(recID,recNodes,recEdges,tableID) {
+function viewProcess(procID,recNodes,recEdges,tableID) {
+
 	closeGraph();
+	var currentRow=d3.select("#process"+procID);
+	d3.select("#"+prevRowID).attr("class",originalColor);
+	//if already open, don't reopen it
+	if (openedCreatorID==procID) {
+		openedCreatorID=null;
+		return;
+	} else {
+		prevRowID="process"+procID;
+		openedCreatorID=procID;
+		originalColor=currentRow.node().className;
+		currentRow.attr("class","danger");
+	}
+
 	var realNodes=[];
 	for (var i = 0; i < recNodes.length; i++) {
 		var c = recNodes[i];
@@ -112,7 +127,22 @@ function viewProcess(recID,recNodes,recEdges,tableID) {
 }
 
 function viewRecommendation(recID,recNodes,recEdges,tableID) {
+
 	closeGraph();
+	var currentRow=d3.select("#recom"+recID);
+	d3.select("#recom"+prevRowID).attr("class",originalColor);
+	//if already open, don't reopen it
+	if (openedCreatorID==recID) {
+		openedCreatorID=null;
+		return;
+	//else make chosen row red and remember its ID
+	} else {
+		prevRowID=recID;
+		openedCreatorID=recID;
+		originalColor=currentRow.node().className;
+		currentRow.attr("class","danger");
+	}
+
 	var realNodes=[];
 	for (var i = 0; i < recNodes.length; i++) {
 		var c = recNodes[i];
@@ -133,12 +163,20 @@ function viewRecommendation(recID,recNodes,recEdges,tableID) {
 		.attr("style","float:right;margin-bottom:20px")
 		.on("click",function(){
 			closeGraph();
+			openedCreatorID=null;
+			d3.select("#recom"+prevRowID).attr("class",originalColor);
 		})
 		.attr("class","btn btn-danger")
 		.html('<span class="glyphicon glyphicon-remove"></span>');
 	var parent = d3.select("#"+tableID).node().parentNode;
 	insertAfter(closeButton , parent);
 	insertAfter(graphObj.getSVGElement(parent.offsetWidth,400) , d3.select("#closeSVGButton").node());
+
+
+	//todo: render and show profession assignment!!!
+
+
+
 	redraw();
 }
 
