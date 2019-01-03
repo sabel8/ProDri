@@ -4,9 +4,18 @@ $( document ).ready(function() {
 setCalendar();
 });
 
+function see(){
+	var events = [];
+	events = $('#calendar').fullCalendar('clientEvents');
+	console.log(events);
+}
+
 function setCalendar() {
 	
 	$('#calendar').fullCalendar({
+		validRange: {
+			start: '2018-12-13'
+	  	},
 		header:{
 			left:   'title',
 			center: 'agendaWeek,month,listWeek',
@@ -29,7 +38,19 @@ function setCalendar() {
 		},
 		slotLabelFormat:"H:mm",
 		
-		events: "php_functions/loadEvents.php"
+		events: "php_functions/loadEvents.php",
+
+		eventClick: function(calEvent, jsEvent, view){
+			$("#modalEventTitle").html(calEvent.title);
+			var description = "<b>FROM: </b>" + calEvent.start.format("Y MMM D ddd, HH:mm:ss")
+			+ "<br><b>TO:    </b>" + calEvent.end.format("Y MMM D ddd, HH:mm:ss")
+			+ "<br><b>DURATION: </b>" + moment.duration(calEvent.end.diff(calEvent.start)).humanize();
+			$("#modalEventBody").html(description);
+			$("#eventDetailsModal").modal();
+			/*console.log(calEvent);
+			console.log(jsEvent);
+			console.log(view); */
+		}
 	});
 
 	var now = new Date();

@@ -29,7 +29,8 @@ for ($i=0; $i < $days; $i++) {
 				'allDay' => false,
 				'title' => $curEvent[0],
 				'start' => $curEvent[1].'-'.$curEvent[2].'-'.$curEvent[3].'T'.$curEvent[4],
-				'end' => $curEvent[1].'-'.$curEvent[2].'-'.$curEvent[3].'T'.$curEvent[5]
+				'end' => $curEvent[1].'-'.$curEvent[2].'-'.$curEvent[3].'T'.$curEvent[5],
+				'overlap' => false
 			);
 		}
 		
