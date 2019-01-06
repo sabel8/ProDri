@@ -1,25 +1,40 @@
 <?php
 require_once("config.php");
-include(TEMPLATE.DS."header.php");
 $username="John Smith";
-$devmode=false;
-($devmode==true?print_r(count($_POST)!=0?$_POST:"No post set"):"");
+$devmode=true;
 
-//makes a new record of the exception in the database
+//database manipulation according to POST
 if($_POST) {
 	global $connection;
-	$query = $connection->prepare("INSERT INTO timeslot_exceptions (personID,avaliable,title,startTime,endTime)
-	VALUES (1,?,?,?,?)");/*todo personID -> dynamic*/
-	$avalibility=isset($_POST["avalibility"]);
-	$title=$_POST["eventType"];
-	$fromDT=$_POST["fromDateTime"];
-	$toDT=$_POST["toDateTime"];
-	$query->bind_param("isss",$avalibility,$title,$fromDT,$toDT);
-	if ($query->execute()) {
+	if(isset($_POST['deleteEvent'])) {
+		$query = $connection->prepare("DELETE FROM timeslot_exceptions WHERE ID=? AND 
+			(SELECT ID FROM persons WHERE personName=?)=personID");
+		$query->bind_param("is",$_POST["deleteEvent"],$username);
+		if (!$query->execute()) {
+			die("Error while deleting a timeslot exception event!");
+		}
+
 	} else {
-	  die("Error while adding a new timeslot exception event!");
+		$query = $connection->prepare("INSERT INTO timeslot_exceptions (personID,avaliable,title,startTime,endTime)
+		VALUES (1,?,?,?,?)");/*todo personID -> dynamic*/
+		$avalibility=isset($_POST["avalibility"]);
+		$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
+		$fromDT=$_POST["fromDateTime"];
+		$toDT=$_POST["toDateTime"];
+		$query->bind_param("isss",$avalibility,$title,$fromDT,$toDT);
+		if (!$query->execute()) {
+			die("Error while adding a new timeslot exception event!");
+		}
 	}
+	
+	// Redirect to this page.
+	header("Location: " . $_SERVER['REQUEST_URI']);
+	exit();
 }
+
+
+include(TEMPLATE.DS."header.php");
+
 
 //include("php_functions/loadEvents.php");
 ?>
@@ -28,7 +43,11 @@ if($_POST) {
 	<div class="well">
 		<!-- Trigger the modal with a button -->
 		<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#newEventModal">New event</button>
-		<button type="button" class="btn btn-default" onclick="see()">Events</button>
+		<?php
+		if ($devmode==true) {
+			echo '<button type="button" class="btn btn-default" onclick="see()">Events</button>';
+		}
+		?>		
 		<h2>My schedule (<?php echo $username;?>)</h2>
 		<div id="calendar"></div>
 	</div>
@@ -53,7 +72,7 @@ if($_POST) {
 					<div class="form-group">
 							<label for="fromDateTime">Event start:</label>
 						<div class='input-group date' id='datetimepicker1'>
-							<input type='text' name="fromDateTime" class="form-control" id="fromDateTime" onchange="setMinDate()" />
+							<input autocomplete="off" type='text' name="fromDateTime" class="form-control" id="fromDateTime" onchange="setMinDate()" />
 							<span class="input-group-addon">
 								<span class="glyphicon glyphicon-calendar"></span>
 							</span>
@@ -62,7 +81,7 @@ if($_POST) {
 					<div class="form-group">
 							<label for="toDateTime">Event end:</label>
 						<div class='input-group date' id='datetimepicker2'>
-							<input type='text' name="toDateTime" class="form-control" id="toDateTime" />
+							<input autocomplete="off" type='text' name="toDateTime" class="form-control" id="toDateTime" />
 							<span class="input-group-addon">
 								<span class="glyphicon glyphicon-calendar"></span>
 							</span>
@@ -94,6 +113,10 @@ if($_POST) {
 				<p id="modalEventBody">ERROR</p>
 			</div>
 			<div class="modal-footer">
+				<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
+					<button id="deleteEventButton" style="float:left" type="submit" name="deleteEvent"
+						class="btn btn-danger">Delete</button>
+				</form>
 				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 			</div>
 			</div>
