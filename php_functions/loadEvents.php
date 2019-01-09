@@ -52,7 +52,8 @@ if(count($plusEvents)!=1){
 			'title' => $curEvent[2],
 			'start' => $curEvent[0],
 			'end' => $curEvent[1],
-			'color' => ($curEvent[3]==0?"red":"green"),
+			'avaliable' => $curEvent[3]==1?true:false,
+			'color' => $curEvent[3]==0?"red":"green",
 			'canEdit' => true,
 			'regular' => false,
 			'dbID' => $curEvent[4]

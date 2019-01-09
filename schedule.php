@@ -1,7 +1,7 @@
 <?php
 require_once("config.php");
 $username="John Smith";
-$devmode=true;
+$devmode=false;
 
 //database manipulation according to POST
 if($_POST) {
@@ -14,6 +14,17 @@ if($_POST) {
 			die("Error while deleting a timeslot exception event!");
 		}
 
+	} else if (isset($_POST['saveEvent'])) {			
+		$avalibility=isset($_POST["avalibilityEdit"]);
+		$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
+		$fromDT=$_POST["fromDateTimeEdit"];
+		$toDT=$_POST["toDateTimeEdit"];
+		$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,startTime=?,endTime=? WHERE ID=?");
+		$query->bind_param("sissi",$title,$avalibility,$fromDT,$toDT,$_POST["saveEvent"]);
+		if (!$query->execute()) {
+			print_r($_POST);
+			die("Error while updating a timeslot exception event! ".mysqli_error($connection)."<br>");
+		}
 	} else {
 		$query = $connection->prepare("INSERT INTO timeslot_exceptions (personID,avaliable,title,startTime,endTime)
 		VALUES (1,?,?,?,?)");/*todo personID -> dynamic*/
@@ -26,10 +37,14 @@ if($_POST) {
 			die("Error while adding a new timeslot exception event!");
 		}
 	}
-	
-	// Redirect to this page.
-	header("Location: " . $_SERVER['REQUEST_URI']);
-	exit();
+
+	if ($devmode==true) {
+		print_r($_POST);
+	} else {
+		// Redirect to this page.
+		header("Location: " . $_SERVER['REQUEST_URI']);
+		exit();
+	}
 }
 
 
@@ -98,6 +113,56 @@ include(TEMPLATE.DS."header.php");
 		</div>
 	</div>
 
+	<!-- Edit Event Modal -->
+	<div id="eventEditModal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<!-- Modal content-->
+			<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="modal-title"><b>Edit event</b></h4>
+			</div>
+			<form id="newEventForm" method="post">
+				<div class="modal-body">
+					<div class="form-group">
+						<label for="type">Type (name):</label>
+						<input id="eventNameInput" type='text' name="eventType" class="form-control" id="type">
+					</div>
+					<label class="checkbox-inline"><input id="avaliableEvent" name="avalibilityEdit" type="checkbox">Avaliable for work</label>
+					<div class="form-group">
+							<label for="fromDateTime">Event start:</label>
+						<div class='input-group date' id='datetimepicker3'>
+							<input autocomplete="off" type='text' name="fromDateTimeEdit" class="form-control" id="fromDateTimeEdit"
+								onchange="setMinDate()" />
+							<span class="input-group-addon">
+								<span class="glyphicon glyphicon-calendar"></span>
+							</span>
+						</div>
+					</div>
+					<div class="form-group">
+							<label for="toDateTime">Event end:</label>
+						<div class='input-group date' id='datetimepicker4'>
+							<input autocomplete="off" type='text' name="toDateTimeEdit" class="form-control" id="toDateTimeEdit" />
+							<span class="input-group-addon">
+								<span class="glyphicon glyphicon-calendar"></span>
+							</span>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+				<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
+					<button id="deleteEventButton" style="float:left" type="submit" name="deleteEvent"
+						class="btn btn-danger">Delete</button>
+					<button id="saveEventButton" type="submit" name="saveEvent" 
+						class="btn btn-success">Save</button>
+				</form>
+				</div>
+			</form>
+			</div>
+
+		</div>
+	</div>
+
 
 	<!-- Event Details Modal -->
 	<div id="eventDetailsModal" class="modal fade" role="dialog">
@@ -113,10 +178,7 @@ include(TEMPLATE.DS."header.php");
 				<p id="modalEventBody">ERROR</p>
 			</div>
 			<div class="modal-footer">
-				<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
-					<button id="deleteEventButton" style="float:left" type="submit" name="deleteEvent"
-						class="btn btn-danger">Delete</button>
-				</form>
+				<button id="editEventButton" style="float:left" data-dismiss="modal" onclick="openEditModal();" class="btn btn-warning">Edit</button>
 				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 			</div>
 			</div>
