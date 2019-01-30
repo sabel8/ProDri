@@ -1,26 +1,5 @@
 var pathes=new Array();
 
-function calcPathDur(startID,endID,visited,localPathList) {
-	visited[startID] = true;
-
-	if (startID===endID) {
-		pathes.push(localPathList.toString());
-	}
-
-	for (var i=0;i<edges.length;i++) {
-		if (edges[i].fromNodeID===startID) {
-			var curNode = getNodeByID(edges[i].toNodeID);
-			if(!visited[curNode.ID]) {
-				localPathList.push(curNode.ID);
-				calcPathDur(curNode.ID,endID,visited,localPathList);
-				localPathList.splice(localPathList.length-1,1);
-			}
-		}
-	}
-	
-	visited[startID]=false;
-}
-
 //helper function for critical path calculation
 function calc() {
 	var startingNodeID, finishNodeID;
@@ -91,6 +70,28 @@ function calc() {
 				"\nIt's duration is : "+maxDuration);
 		}
 	}
+}
+
+function calcPathDur(startID,endID,visited,localPathList) {
+	visited[startID] = true;
+
+	if (startID===endID) {
+		pathes.push(localPathList.toString());
+	}
+
+	for (var i=0;i<edges.length;i++) {
+		if (edges[i].fromNodeID===startID) {
+			var curNode = getNodeByID(edges[i].toNodeID);
+			if(!visited[curNode.ID]) {
+				localPathList.push(curNode.ID);
+				calcPathDur(curNode.ID,endID,visited,localPathList);
+				//removes  last element
+				localPathList.pop();
+			}
+		}
+	}
+	
+	visited[startID]=false;
 }
 
 function deleteSelected() {

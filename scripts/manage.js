@@ -14,7 +14,7 @@ $(function(){
         $('.list-group a').removeClass('active');
         $that.addClass('active');
     });
-})
+});
 
 function createRec(processGroupID,personID,reload) {
 	//getting the title of the recommendation

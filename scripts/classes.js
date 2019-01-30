@@ -531,7 +531,7 @@ class Graph{
 				reviseInAndOutputs();
 				redraw();
 			}
-			//simple click alerts info about the node
+			//simple click shows info about the node
 			else {
 				//only shows if not selected yet
 				if (selectedNode!=d) {
@@ -541,10 +541,9 @@ class Graph{
 
 					//setting up the modal with the text
 					d3.select("#objectName").text("Node: "+d.txt);
-					var infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
+					var infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>"); //this takes too much time
 					d3.select("#objectInfo").html(infoSplitted);
 					d3.select("#"+thisGraph.objectInfoModalTriggerID).node().click();
-
 					//disable status changing on start and finish nodes
 					if (d.txt!="START" && d.txt!="FINISH") {
 						d3.select("#statusSelect").style("display","block");

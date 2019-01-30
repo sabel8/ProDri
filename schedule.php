@@ -14,16 +14,28 @@ if($_POST) {
 			die("Error while deleting a timeslot exception event!");
 		}
 
-	} else if (isset($_POST['saveEvent'])) {			
-		$avalibility=isset($_POST["avalibilityEdit"]);
-		$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
-		$fromDT=$_POST["fromDateTimeEdit"];
-		$toDT=$_POST["toDateTimeEdit"];
-		$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,startTime=?,endTime=? WHERE ID=?");
-		$query->bind_param("sissi",$title,$avalibility,$fromDT,$toDT,$_POST["saveEvent"]);
-		if (!$query->execute()) {
-			print_r($_POST);
-			die("Error while updating a timeslot exception event! ".mysqli_error($connection)."<br>");
+	} else if (isset($_POST['saveEvent'])) {
+		if (!isset($_POST['fromDateTimeEdit'])) {
+			$avalibility=isset($_POST["avalibilityEdit"]);
+			$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
+			$toDT=$_POST["toDateTimeEdit"];
+			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,endTime=? WHERE ID=?");
+			$query->bind_param("sisi",$title,$avalibility,$toDT,$_POST["saveEvent"]);
+			if (!$query->execute()) {
+				print_r($_POST);
+				die("Error while updating a timeslot exception event happening now! ".mysqli_error($connection)."<br>");
+			}
+		} else {
+			$avalibility=isset($_POST["avalibilityEdit"]);
+			$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
+			$fromDT=$_POST["fromDateTimeEdit"];
+			$toDT=$_POST["toDateTimeEdit"];
+			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,startTime=?,endTime=? WHERE ID=?");
+			$query->bind_param("sissi",$title,$avalibility,$fromDT,$toDT,$_POST["saveEvent"]);
+			if (!$query->execute()) {
+				print_r($_POST);
+				die("Error while updating a timeslot exception event! ".mysqli_error($connection)."<br>");
+			}
 		}
 	} else {
 		$query = $connection->prepare("INSERT INTO timeslot_exceptions (personID,avaliable,title,startTime,endTime)
@@ -151,8 +163,6 @@ include(TEMPLATE.DS."header.php");
 				</div>
 				<div class="modal-footer">
 				<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
-					<button id="deleteEventButton" style="float:left" type="submit" name="deleteEvent"
-						class="btn btn-danger">Delete</button>
 					<button id="saveEventButton" type="submit" name="saveEvent" 
 						class="btn btn-success">Save</button>
 				</form>
@@ -178,7 +188,11 @@ include(TEMPLATE.DS."header.php");
 				<p id="modalEventBody">ERROR</p>
 			</div>
 			<div class="modal-footer">
-				<button id="editEventButton" style="float:left" data-dismiss="modal" onclick="openEditModal();" class="btn btn-warning">Edit</button>
+				<button id="editEventButton" style="float:left;margin-right: 10px;" data-dismiss="modal" onclick="openEditModal();" class="btn btn-warning">Edit</button>
+				<form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>" method="post">
+					<button id="deleteEventButton" style="float:left" type="submit" name="deleteEvent"
+						class="btn btn-danger">Delete</button>
+				</form>
 				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
 			</div>
 			</div>

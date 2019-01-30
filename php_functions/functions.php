@@ -10,7 +10,7 @@ function confirm($result) {
 	global $connection;
 
 	if (!$result) {
-		die("QUERY_FAILED ".mysqli_error($connection));
+		die("<br>QUERY_FAILED ".mysqli_error($connection));
 	}
 }
 
@@ -35,10 +35,13 @@ function getRowsOfQuery($queryTxt){
 	//print_r($queryTxt."<br><br>");
 	global $connection;
 	$query = $connection->prepare($queryTxt);
-	confirm($query);
+	confirm($query,$queryTxt);
 	$query->execute();
+	if ($query===false) {
+		print_r("QUERY=\"".$queryTxt."\" ".mysqli_error($connection));
+		return null;
+	}
 	$result = $query->get_result();
-	print_r(mysqli_error($connection));
 	$res="";
 	while ($row = $result->fetch_assoc()){
 		/*print_r($row);

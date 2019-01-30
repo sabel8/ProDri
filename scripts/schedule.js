@@ -11,22 +11,15 @@ function see() {
 		if(mainEvent.regular==true) {
 			continue;
 		}
-		/* console.log("mainevent "+mainEvent.title);
-		console.log(mainEvent.start._i);
-		console.log(mainEvent.end._i); */
 		for (var j = 0; j < events.length; j++) {
 			//not inspecting the element with itself
 			if (j == i) {
 				continue;
 			}
 			var curEvent = events[j];
-			/* console.log("curEvent " + curEvent.title);
-			console.log(curEvent.start._i);
-			console.log(curEvent.end._i); */
 
 			//curEvent starts earlier, but meets mainEvent
 			if (mainEvent.start > curEvent.start && mainEvent.start < curEvent.end && mainEvent.regular == false && curEvent.regular == true) {
-				/*alert("gotcha "+mainEvent.title);*/
 
 				//if curEvent lasts longer than the mainEvent
 				if (mainEvent.end < curEvent.end) {
@@ -57,14 +50,24 @@ function see() {
 				curEvent.end = mainEvent.start;
 				$('#calendar').fullCalendar('updateEvent', curEvent);
 			}
-			//mainEvent start earlier and ends in curEvent
-			else if (mainEvent.start < curEvent.start && mainEvent.end > curEvent.start && mainEvent.end < curEvent.end && mainEvent.regular == false && curEvent.regular == true) {
+			//mainEvent start not after and ends in curEvent
+			else if (mainEvent.start <= curEvent.start && mainEvent.end > curEvent.start && mainEvent.end < curEvent.end && mainEvent.regular == false && curEvent.regular == true) {
 				curEvent.start = mainEvent.end;
 				$('#calendar').fullCalendar('updateEvent', curEvent);
 			}
+			//if mainEvent surrounds curEvent
+			else if(mainEvent.start <= curEvent.start && mainEvent.end >= curEvent.end) {
+				//delete
+				$('#calendar').fullCalendar('removeEvents', function(event){
+					if(event._id == curEvent._id) {
+						return true;
+					} else {
+						return false;
+					}
+				});
+			}
 		}
 	}
-	/* console.log(events); */
 }
 
 function openEditModal() {
@@ -116,7 +119,9 @@ function setCalendar() {
 			$("#modalEventBody").html(description);
 			if (calEvent.canEdit == true) {
 				$("#editEventButton").show();
+				$("#deleteEventButton").show();
 			} else {
+				$("#deleteEventButton").hide();
 				$("#editEventButton").hide();
 			}
 			$("#eventDetailsModal").modal();
@@ -127,16 +132,34 @@ function setCalendar() {
 				$("#saveEventButton").val(calEvent.dbID);
 				$("#eventNameInput").val(calEvent.title);
 				$("#avaliableEvent").prop('checked',calEvent.avaliable);
-				$('#datetimepicker4').data("DateTimePicker").minDate(calEvent.start.local().toDate());
+				//the event has not ended
+				if(calEvent.end.local() > moment().local()) {
+					//the event is in the future
+					if (calEvent.start.local() > moment().local()) {
+						$("#datetimepicker3").data("DateTimePicker").enable();
+						$('#datetimepicker3').data("DateTimePicker").minDate(new Date());
+						$("#datetimepicker4").data("DateTimePicker").enable();
+					//the event is occuring in the present
+					} else {
+						$("#datetimepicker3").data("DateTimePicker").disable();
+						$('#datetimepicker3').data("DateTimePicker").minDate(false);
+						$("#datetimepicker4").data("DateTimePicker").enable();
+					}
+				//the event is in the past, disable edit and delete
+				} else {
+					$("#deleteEventButton").hide();
+					$("#editEventButton").hide();
+				}
 				$('#datetimepicker3').data("DateTimePicker").date(calEvent.start.local().toDate());
+				$('#datetimepicker4').data("DateTimePicker").minDate(calEvent.start.local().toDate());
 				$('#datetimepicker4').data("DateTimePicker").date(calEvent.end.local().toDate());
-				//set date for datetimepicekr4
 			}
 		}
 	});
 
 	var now = new Date();
 
+	//new event modal "from" dateTimePicker
 	$('#datetimepicker1').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
@@ -151,7 +174,7 @@ function setCalendar() {
 		setMinDate('#datetimepicker1','#datetimepicker2');
 	});
 
-
+	//new event modal "to" dateTimePicker
 	$('#datetimepicker2').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
@@ -164,10 +187,10 @@ function setCalendar() {
 		keepOpen: false
 	});
 
+	//edit modal "from" dateTimePicker
 	$('#datetimepicker3').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
-		dayViewHeaderFormat: 'YYYY MMMM',		
-		minDate: now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate() + " " + now.getHours() + ":" + now.getMinutes(),
+		dayViewHeaderFormat: 'YYYY MMMM',
 		useCurrent: false,
 		collapse: true,
 		locale: moment.locale(),
@@ -178,6 +201,8 @@ function setCalendar() {
 		setMinDate('#datetimepicker3','#datetimepicker4');
 	});
 
+
+	//edit modal "to" dateTimePicker
 	$('#datetimepicker4').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
