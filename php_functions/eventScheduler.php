@@ -22,6 +22,7 @@ $doneNodeIDs = [];
 
 
 $pathes=[];
+deleteEventsOfProcess($processID);
 $critPath = calculateCriticalPath($processID);
 array_pop($critPath);
 print_r($critPath);echo" : critpath<br>";
@@ -50,8 +51,8 @@ function fillInTaskEvent($curEdges){
 				array_pop($prevTasks);
 				//if all predecessors are scheduled
 				if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
-					//todo PUT INTO CALENDAR
-					echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br>";
+					scheduleTask($nodeID);
+					echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br>";
 					$doneNodeIDs[] = $nodeID;
 					//no longer taking it into consideration
 					array_splice($curEdges, $key, 1);
@@ -72,38 +73,76 @@ function fillInTaskEvent($curEdges){
 			array_pop($prevTasks);
 			//if all predecessors are scheduled
 			if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
-				echo count($doneNodeIDs).". ";print_r($curTask[0]);echo " <br>";
 				scheduleTask($nodeID);
+				echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br>";
 				$doneNodeIDs[] = $nodeID;
 				fillInTaskEvent(getRowsOfQuery("SELECT toNodeID FROM edges WHERE processID=$processID AND fromNodeID=$nodeID"));
 			}
 		}
-
-
-		/*for ($j=1; $j < 4; $j++) { 
-			$freebegin=getFirstAvaliableTimeslot(1,$time);
-			echo "<b>".$freebegin." = $j. jó</b><br>";
-			$time = getEndOfFreeTimeslot(1,$freebegin);
-			echo "<b>".$time." = $j. vég</b><br><br>";
-		}*/
 	}
 
 }
 
 
 function scheduleTask($taskID){
-	global $connection, $processID;
+	global $connection, $processID, $startTime;
 	$realNodeID = (int) getRowsOfQuery("SELECT ID FROM nodes WHERE nodeID=$taskID AND processID=$processID")[0];
-	$duration = (int) getRowsOfQuery("SELECT duration FROM nodes WHERE ID=$realNodeID");
-	/* $sql = "INSERT INTO unavaliable_timeslots (title,nodeID,personID,startTime,duration) VALUES ('Work',$realNodeID,
-	(SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID),$startTime)"; */
-	if (true) {
+	$nodeTitle = getRowsOfQuery("SELECT txt FROM nodes WHERE ID=$realNodeID")[0];
+	if ($nodeTitle=="START" OR $nodeTitle=="FINISH") {
+		return;
+	}
+	$predecessors = getRowsOfQuery("SELECT fromNodeID FROM edges WHERE processID=$processID AND toNodeID=$taskID");
+	print_r($predecessors);echo " : $nodeTitle task predecs<br>";
+	$userID=getRowsOfQuery("SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID")[0];
+	$remainingDur = (int) getRowsOfQuery("SELECT duration FROM nodes WHERE ID=$realNodeID")[0];
 
+	$canBeStarted = (int) $startTime;
+	//goes through the predecessor nodes
+	//finding for the first when the node can be started
+	//(end timestamp of the predecessor which finishes last)
+	for ($i=0; $i < count($predecessors)-1; $i++) {
+		$curPredecID = $predecessors[$i];
+		//if the predecessor is start then continue
+		if(count(getRowsOfQuery("SELECT ID FROM nodes WHERE txt='START' AND nodeID=$curPredecID")) > 1){
+			continue;
+		}
+		$lastTime = getRowsOfQuery("SELECT unix_timestamp(startTime)+time_to_sec(duration) as endTime FROM unavaliable_timeslots WHERE
+		nodeID=(SELECT ID FROM nodes WHERE processID=$processID AND nodeID=$curPredecID) ORDER BY endTime DESC");
+		print_r($lastTime);
+		echo "<br>".date('Y-m-d H:i:s',$canBeStarted) . " vagy " . date('Y-m-d H:i:s', $lastTime[0])."<br>";
+		if ((int) $lastTime[0]>$canBeStarted) {
+			$canBeStarted = $lastTime[0];
+		}
+	}
+	echo date('Y-m-d H:i:s', $canBeStarted)." : kezdés<br><br>";
+	while ($remainingDur > 0){
+		$freeStart=getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted));
+		$endOfFreeTime=getEndOfFreeTimeslot($userID,$freeStart);
+		$curDur = strtotime($endOfFreeTime) - strtotime($freeStart);
+		$remainingDur -= $curDur;
+		print_r($freeStart);echo ":from $nodeTitle<br>";
+		print_r($endOfFreeTime);echo ":end $nodeTitle<br>";
+		$canBeStarted = $endOfFreeTime;
+
+		$sql = "INSERT INTO unavaliable_timeslots (title,nodeID,personID,startTime,duration) 
+		VALUES (CONCAT('WORK: ','$nodeTitle'), $realNodeID,(SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID),
+		'$freeStart',SEC_TO_TIME($curDur))";
+		//running the query
+		if (!mysqli_query($connection, $sql)) {
+			echo "Error: " . $sql . "<br>" . mysqli_error($connection);
+		}
 	}
 }
 
+function deleteEventsOfProcess($processID) {
+	global $connection;
+	if (!mysqli_query($connection, "DELETE t FROM unavaliable_timeslots t INNER JOIN nodes n ON n.ID=t.nodeID
+		WHERE n.processID=$processID AND NOT t.personID=0")) {
+		echo "Error deleting record: " . mysqli_error($conn);
+	}
+}
 
-//timeformat: 2019-01-12 03:03:59
+//timeformat: 2019-01-12 03:03:59 (input and returning, too)
 function getFirstAvaliableTimeslot($userID,$time) {
 	//echo $time."ez az ido<br>";
 	//$time-kor ütközik-e valamelyik eseménnyel
@@ -117,7 +156,7 @@ function getFirstAvaliableTimeslot($userID,$time) {
 	$regular = getRowsOfQuery("SELECT IF(addtime(date('$time'),time(startTime))>'$time',addtime(date('$time'),time(startTime)),'$time'),
 	addtime(date('$time'), addtime(time(startTime),duration)),'regular event' FROM unavaliable_timeslots events
 	#checks weekly repetitions
-	JOIN `timeslot_repetitions` trw ON trw.repetition_type = 'weekday' AND trw.timeslotID=events.ID
+	LEFT JOIN `timeslot_repetitions` trw ON trw.repetition_type = 'weekday' AND trw.timeslotID=events.ID
 	WHERE weekday('$time')=IF(repetition_value=0,6,repetition_value-1) AND TIME(events.startTime)<=TIME('$time') 
 		AND ADDTIME(TIME(events.startTime),events.duration)>TIME('$time') #starts not after $time and ends after $time");
 	//if yes...
@@ -132,13 +171,11 @@ function getFirstAvaliableTimeslot($userID,$time) {
 		//print_r($exception);echo "<br>";
 		//if there is, return it's startDateTime
 		if(count($exception)>1) {
-			//echo "the interrupting exception won<br>";
+			//the interrupting exception won
 			return explode("|",$exception[0])[0];
 		} 
 		return getFirstAvaliableTimeslot($userID,$time);
 	} 
-	//print_r($exceptions);echo "<br>";print_r($regular);echo "<br><br>";
-	//echo "the end of the exception won<br>";
 	return $time;
 }
 

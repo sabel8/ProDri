@@ -1,15 +1,15 @@
 <?php
 require_once("config.php");
-$username="John Smith";
+$_SESSION['userID']=1; //this is for developing only
+$userID=$_SESSION['userID'];
 $devmode=false;
 
 //database manipulation according to POST
 if($_POST) {
 	global $connection;
 	if(isset($_POST['deleteEvent'])) {
-		$query = $connection->prepare("DELETE FROM timeslot_exceptions WHERE ID=? AND 
-			(SELECT ID FROM persons WHERE personName=?)=personID");
-		$query->bind_param("is",$_POST["deleteEvent"],$username);
+		$query = $connection->prepare("DELETE FROM timeslot_exceptions WHERE ID=? AND personID=$userID");
+		$query->bind_param("is",$_POST["deleteEvent"],$userID);
 		if (!$query->execute()) {
 			die("Error while deleting a timeslot exception event!");
 		}
@@ -19,7 +19,7 @@ if($_POST) {
 			$avalibility=isset($_POST["avalibilityEdit"]);
 			$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
 			$toDT=$_POST["toDateTimeEdit"];
-			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,endTime=? WHERE ID=?");
+			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,endTime=? WHERE ID=? AND personID=$userID");
 			$query->bind_param("sisi",$title,$avalibility,$toDT,$_POST["saveEvent"]);
 			if (!$query->execute()) {
 				print_r($_POST);
@@ -30,7 +30,7 @@ if($_POST) {
 			$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
 			$fromDT=$_POST["fromDateTimeEdit"];
 			$toDT=$_POST["toDateTimeEdit"];
-			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,startTime=?,endTime=? WHERE ID=?");
+			$query = $connection->prepare("UPDATE timeslot_exceptions SET title=?,avaliable=?,startTime=?,endTime=? WHERE ID=? AND personID=$userID");
 			$query->bind_param("sissi",$title,$avalibility,$fromDT,$toDT,$_POST["saveEvent"]);
 			if (!$query->execute()) {
 				print_r($_POST);
@@ -39,12 +39,12 @@ if($_POST) {
 		}
 	} else {
 		$query = $connection->prepare("INSERT INTO timeslot_exceptions (personID,avaliable,title,startTime,endTime)
-		VALUES (1,?,?,?,?)");/*todo personID -> dynamic*/
+		VALUES (?,?,?,?,?)");/*todo personID -> dynamic*/
 		$avalibility=isset($_POST["avalibility"]);
 		$title=$_POST["eventType"]==""?"NO TITLE GIVEN":$_POST["eventType"];
 		$fromDT=$_POST["fromDateTime"];
 		$toDT=$_POST["toDateTime"];
-		$query->bind_param("isss",$avalibility,$title,$fromDT,$toDT);
+		$query->bind_param("sisss",$userID,$avalibility,$title,$fromDT,$toDT);
 		if (!$query->execute()) {
 			die("Error while adding a new timeslot exception event!");
 		}
@@ -75,7 +75,7 @@ include(TEMPLATE.DS."header.php");
 			echo '<button type="button" class="btn btn-default" onclick="see()">Events</button>';
 		}
 		?>		
-		<h2>My schedule (<?php echo $username;?>)</h2>
+		<h2>My schedule (<?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0];?>)</h2>
 		<div id="calendar"></div>
 	</div>
 	

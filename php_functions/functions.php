@@ -35,9 +35,11 @@ function getRowsOfQuery($queryTxt){
 	//print_r($queryTxt."<br><br>");
 	global $connection;
 	$query = $connection->prepare($queryTxt);
-	confirm($query,$queryTxt);
+	if(!$query){
+		die("$queryTxt <br>QUERY_FAILED ".mysqli_error($connection)."<br>");
+	}
 	$query->execute();
-	if ($query===false) {
+	if ($query==false) {
 		print_r("QUERY=\"".$queryTxt."\" ".mysqli_error($connection));
 		return null;
 	}
