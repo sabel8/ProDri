@@ -8,7 +8,7 @@ $devmode=false;
 if($_POST) {
 	global $connection;
 	if(isset($_POST['deleteEvent'])) {
-		$query = $connection->prepare("DELETE FROM timeslot_exceptions WHERE ID=? AND personID=$userID");
+		$query = $connection->prepare("DELETE FROM timeslot_exceptions WHERE ID=? AND personID=?");
 		$query->bind_param("is",$_POST["deleteEvent"],$userID);
 		if (!$query->execute()) {
 			die("Error while deleting a timeslot exception event!");

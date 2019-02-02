@@ -35,7 +35,8 @@ for ($i=0; $i < $days; $i++) {
 				'overlap' => false,
 				/*'nodeID' => ($curEvent[6]===null?"":$curEvent[6]), /*error here */
 				'canEdit' => false,
-				'regular' => true
+				'regular' => (substr($curEvent[0],0,4)=="WORK")?false:true,
+				'color' => (substr($curEvent[0],0,4)=="WORK")?"orange":""
 			);
 		}
 		

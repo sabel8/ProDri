@@ -17,6 +17,9 @@ function see() {
 				continue;
 			}
 			var curEvent = events[j];
+			if(curEvent.regular==false) {
+				continue;
+			}
 
 			//curEvent starts earlier, but meets mainEvent
 			if (mainEvent.start > curEvent.start && mainEvent.start < curEvent.end && mainEvent.regular == false && curEvent.regular == true) {

@@ -20,7 +20,7 @@ $nodeCounter = getRowsOfQuery("SELECT count(ID) FROM nodes WHERE processID=$proc
 //array for counting how many node have been put into calendar
 $doneNodeIDs = [];
 
-
+//echo getFirstAvaliableTimeslot(1,"2019-02-01 10:37:45")."ezezez<br>";
 $pathes=[];
 deleteEventsOfProcess($processID);
 $critPath = calculateCriticalPath($processID);
@@ -51,8 +51,8 @@ function fillInTaskEvent($curEdges){
 				array_pop($prevTasks);
 				//if all predecessors are scheduled
 				if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
+					echo "<br><hr><br>".  count($doneNodeIDs).". ";print_r($curTask[0])."<br>";
 					scheduleTask($nodeID);
-					echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br>";
 					$doneNodeIDs[] = $nodeID;
 					//no longer taking it into consideration
 					array_splice($curEdges, $key, 1);
@@ -73,8 +73,8 @@ function fillInTaskEvent($curEdges){
 			array_pop($prevTasks);
 			//if all predecessors are scheduled
 			if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
+				echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br><br>";
 				scheduleTask($nodeID);
-				echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br>";
 				$doneNodeIDs[] = $nodeID;
 				fillInTaskEvent(getRowsOfQuery("SELECT toNodeID FROM edges WHERE processID=$processID AND fromNodeID=$nodeID"));
 			}
@@ -108,24 +108,29 @@ function scheduleTask($taskID){
 		}
 		$lastTime = getRowsOfQuery("SELECT unix_timestamp(startTime)+time_to_sec(duration) as endTime FROM unavaliable_timeslots WHERE
 		nodeID=(SELECT ID FROM nodes WHERE processID=$processID AND nodeID=$curPredecID) ORDER BY endTime DESC");
-		print_r($lastTime);
-		echo "<br>".date('Y-m-d H:i:s',$canBeStarted) . " vagy " . date('Y-m-d H:i:s', $lastTime[0])."<br>";
-		if ((int) $lastTime[0]>$canBeStarted) {
+		//echo "<br>".date('Y-m-d H:i:s',$canBeStarted) . " vagy " . date('Y-m-d H:i:s', $lastTime[0])."<br>";
+		if ((int) $lastTime[0] > $canBeStarted) {
 			$canBeStarted = $lastTime[0];
 		}
 	}
-	echo date('Y-m-d H:i:s', $canBeStarted)." : kezdés<br><br>";
+	$eventCounter=0;
 	while ($remainingDur > 0){
-		$freeStart=getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted));
-		$endOfFreeTime=getEndOfFreeTimeslot($userID,$freeStart);
+		$eventCounter++;
+		$freeStart = getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted));
+		$endOfFreeTime = getEndOfFreeTimeslot($userID,$freeStart);
 		$curDur = strtotime($endOfFreeTime) - strtotime($freeStart);
+		if ($remainingDur - $curDur < 0) {
+			$curDur = $remainingDur;
+			$canBeStarted = strtotime($freeStart) + $curDur;
+		} else {
+			$canBeStarted = strtotime($endOfFreeTime);
+		}
 		$remainingDur -= $curDur;
-		print_r($freeStart);echo ":from $nodeTitle<br>";
-		print_r($endOfFreeTime);echo ":end $nodeTitle<br>";
-		$canBeStarted = $endOfFreeTime;
-
+		$partNo=$eventCounter>1?" (part $eventCounter)":"";
+		print_r($freeStart);echo ":from $nodeTitle $partNo<br>";
+		print_r(date('Y-m-d H:i:s',strtotime($freeStart)+$curDur));echo ":end $nodeTitle $partNo<br>";
 		$sql = "INSERT INTO unavaliable_timeslots (title,nodeID,personID,startTime,duration) 
-		VALUES (CONCAT('WORK: ','$nodeTitle'), $realNodeID,(SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID),
+		VALUES (CONCAT('WORK: ','$nodeTitle','$partNo'), $realNodeID,(SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID),
 		'$freeStart',SEC_TO_TIME($curDur))";
 		//running the query
 		if (!mysqli_query($connection, $sql)) {
@@ -154,15 +159,23 @@ function getFirstAvaliableTimeslot($userID,$time) {
 	}
 	//is there any regular event happening at that time
 	$regular = getRowsOfQuery("SELECT IF(addtime(date('$time'),time(startTime))>'$time',addtime(date('$time'),time(startTime)),'$time'),
-	addtime(date('$time'), addtime(time(startTime),duration)),'regular event' FROM unavaliable_timeslots events
-	#checks weekly repetitions
-	LEFT JOIN `timeslot_repetitions` trw ON trw.repetition_type = 'weekday' AND trw.timeslotID=events.ID
-	WHERE weekday('$time')=IF(repetition_value=0,6,repetition_value-1) AND TIME(events.startTime)<=TIME('$time') 
+		addtime(date('$time'), addtime(time(startTime),duration)),'regular event' FROM unavaliable_timeslots events
+		#checks weekly repetitions
+		LEFT JOIN `timeslot_repetitions` trw ON trw.repetition_type = 'weekday' AND trw.timeslotID=events.ID
+		WHERE weekday('$time')=IF(repetition_value=0,6,repetition_value-1) AND TIME(events.startTime)<=TIME('$time') 
 		AND ADDTIME(TIME(events.startTime),events.duration)>TIME('$time') #starts not after $time and ends after $time");
 	//if yes...
-	if(count($regular)>1){
-		$start = explode("|",$regular[0])[0];
-		$time = explode("|",$regular[0])[1];
+	$regular = array_merge($regular, getRowsOfQuery("SELECT startTime,addTime(startTime,duration) FROM unavaliable_timeslots 
+		WHERE NOT nodeID=0 AND startTime<='$time' AND addtime(startTime,duration)>'$time'"));
+	//print_r($regular);echo"<br>";
+	if(count($regular)>2){
+		if($regular[0]=="") {
+			$start = explode("|",$regular[1])[0];
+			$time = explode("|",$regular[1])[1];
+		} else {
+			$start = explode("|",$regular[0])[0];
+			$time = explode("|",$regular[0])[1];
+		}
 		//echo "start: ".$start." end: ".$time."<br>";
 		//echo $time." volt regular, ez a vége<br>";
 		//inspects if there is any free exception event interrupting the regular event
@@ -256,17 +269,6 @@ function calculateCriticalPath($processID) {
 		$durations[] = (int) ($curDur-$GLOBALS['startTime']);
 		//echo date('Y-m-d H:i:s',$curDur)."<br>";
 	}
-
-	//DONT DELETE
-	//for calculating critical path with the graph defined durations
-	/*for ($i=0; $i < count($pathes); $i++) { 
-		$curIDs = $pathes[$i];
-		$duration = 0;
-		for ($j=0; $j < count($curIDs); $j++) {
-			$duration += intval(getRowsOfQuery("SELECT duration FROM nodes WHERE processID=$processID AND nodeID=".$curIDs[$j])[0]);
-		}
-		$durations[] = $duration;
-	}*/
 
 	//printing the pathes and their durations
 	for ($i=0; $i < count($pathes); $i++) { 
