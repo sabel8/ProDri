@@ -1,20 +1,17 @@
 <?php
 require_once("config.php");
-include(TEMPLATE.DS."header.php");
-$username="John Smith";
-$workdayHours=8;
+$userID=5;
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
   global $connection;
-  $dur=0;$hours=0;
-  $durs=array();
   // Execute code (such as database updates) here.
   foreach ($_POST as $key => $value) {
     if ($value!=-1){
-      if (substr($key,0,11) == "taskDurHour"){
-        $query = $connection->prepare("UPDATE nodes SET duration=?,lastUpdateTime=NOW() WHERE ID=?");
-        $query->bind_param("ii",$value,substr($key,11));
+      if (substr($key,0,11) == "taskDurSecs"){
+        $nodeID=substr($key,11);
+        $query = $connection->prepare("UPDATE nodes SET duration=?,lastUpdateTime=NOW(),durationReceived=NOW(),durationStatus=NULL WHERE ID=?");
+        $query->bind_param("ii",$value,$nodeID);
         if ($query->execute()) {
         } else {
           echo "Error while updating records!";
@@ -39,18 +36,21 @@ if ($_POST) {
     }
   }
   // Redirect to this page, clearing the POST array
-  header("Location: " . $_SERVER['REQUEST_URI']);
-  exit();
+  /* header("Location: " . $_SERVER['REQUEST_URI']);
+  exit(); */
 }
 
-function getUserHTML($username) {
-	global $connection;
+
+include(TEMPLATE.DS."header.php");
+
+function getUserHTML($userID) {
+  global $connection;
+  $username=getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0];
   $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes: ($username)</b></h2><hr>";
   //getting the processes which the user is included in
 	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
     FROM abstract_processes ap, process_groups pg,processes p, nodes n
-    WHERE n.responsiblePersonID=(SELECT pers.ID FROM persons pers 
-    WHERE pers.personName='$username') AND pg.ID=ap.processGroupID
+    WHERE n.responsiblePersonID=$userID AND pg.ID=ap.processGroupID
     GROUP BY pg.ID ORDER BY pg.name, title");
 	$innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
 	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
@@ -204,16 +204,16 @@ $(document).ready( function () {
 } );
 </script>
 <script type="text/javascript" src="scripts/manage.js"></script>
-  <?php echo getUserHTML("John Smith")?>
+  <?php echo getUserHTML($userID)?>
 </div><div class="container well">
  
-  <h2><b>Tasks (for: <?php echo $username; ?>)</b></h2>
+  <h2><b>Tasks (for: <?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0]; ?>)</b></h2>
   <?php
   $innerhtml="";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
      concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,'planned start',n.startTime
-	 ,'Planned finish..','Actual finish...',n.lastUpdateTime,n.priority,'sys log','dels','two buttons..',n.ID
+	 ,'Planned finish..','Actual finish...',n.lastUpdateTime,n.priority,'sys log','dels','two buttons..',n.durationStatus,n.ID
 		FROM nodes AS n
 		LEFT JOIN persons rp
 			ON n.responsiblePersonID=rp.ID 
@@ -227,56 +227,59 @@ $(document).ready( function () {
       ON ap.ID=process.abstractProcessID
     LEFT JOIN process_groups pg
       ON process.processGroupID=pg.ID
-		WHERE rp.personName='".$username."'
+		WHERE rp.ID=$userID
     ORDER BY n.status DESC, n.priority DESC");
   if (count($tasks)>1){
     $innerhtml.=getTableHeader(array("ID","Name","Description","Process (project)","Profession","Inputs",
-	  "Status","RACI","Estimated duration (1workday = ".$workdayHours."hrs)","Planned start","Actual start","Planned finish","Actual finish",
+	  "Status","RACI","Estimated duration","Planned start","Actual start","Planned finish","Actual finish",
 	  "Last update at","Priority","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
       $curTask=explode("|",$tasks[$i]);
+      $nodeRealID=$curTask[count($curTask)-1];
+      $startTime=$curTask[10];
+      $durStat=$curTask[18];
       $innerhtml.="<tr>";
-      //-1 because n.ID will not be displayed
-      for ($n=0;$n<count($curTask)-1;$n++) {
-        $innerhtml.="<td>";
+      //-2 because n.ID,n.durationStatus will not be displayed
+      for ($n=0;$n<count($curTask)-2;$n++) {
         switch ($n) {
           //status
           case 6:
-            $innerhtml.=getStatusText($curTask[$n]);break;
+            $innerhtml.="<td>".getStatusText($curTask[$n])."</td>";break;
           //raci
           case 7:
-            $innerhtml.=getRACItext($curTask[$n]);
+            $innerhtml.="<td>".getRACItext($curTask[$n])."</td>";
             break;
           //duration
           case 8:
-            if ($curTask[$n]==NULL) {
-              $curTaskHour=0;
+            $formHTML='<form action="" method="post">
+            <input type="number" id="taskDurSecs'.$nodeRealID.'" name="taskDurSecs'.$nodeRealID.'"
+              style="width:50px" min="0" value="'.$curTask[$n].'"> seconds<br>
+            <input type="submit" class="btn btn-default" value="Submit"></form>';
+            //'.htmlspecialchars($_SERVER["PHP_SELF"]).'
+            if ($durStat==1) {
+              $innerhtml.="<td class='success'><p>ACCEPTED</p>".$curTask[$n]." seconds</td>";
+            } else if ($durStat==="0") {
+              $innerhtml.="<td class='danger'><p>REFUSED</p>$formHTML</td>";
             } else {
-              $curTaskHour=$curTask[$n];
-            }//'.htmlspecialchars($_SERVER["PHP_SELF"]).'
-            $innerhtml.='<form action="" method="post">'.
-
-                '<input type="number" id="taskDurHour'.$curTask[count($curTask)-1].'" name="taskDurHour'.$curTask[count($curTask)-1].'"
-                style="width:50px" min="0" value="'.$curTaskHour.'"> hours<br>'.
-
-                ' <input type="submit" class="btn btn-default" value="Submit"></form>';
+              $innerhtml.="<td>$formHTML</td>";
+            }
             break;
           //actual start
           case 10:
-            $innerhtml .= ($curTask[$n]==null ? "Not yet started" : $curTask[$n]);
+            $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet started" : $curTask[$n]) ."</td>";
             break;
           //start/finish button
           case 17:
-            $innerhtml.="<form action='' method='post'>";
-            if($curTask[10]==null) {
-              $innerhtml .= "<input class='btn btn-success' type='submit' name='startTask".$curTask[count($curTask)-1]."' value='Start'>";
+            $innerhtml.="<td><form action='' method='post'>";
+            if($startTime==null) {
+              $innerhtml .= "<input class='btn btn-success' type='submit' name='startTask".$nodeRealID."' value='Start'>";
             } else {
-              $innerhtml .= "<input class='btn btn-danger' type='submit' name='finishTask".$curTask[count($curTask)-1]."' value='Finish'>";
+              $innerhtml .= "<input class='btn btn-danger' type='submit' name='finishTask".$nodeRealID."' value='Finish'>";
             }
-            $innerhtml.="</form>";
+            $innerhtml.="</form></td>";
             break;
           default:
-            $innerhtml.=htmlspecialchars($curTask[$n]);
+            $innerhtml.="<td>".htmlspecialchars($curTask[$n])."</td>";
         }
         $innerhtml.="</td>";
       }

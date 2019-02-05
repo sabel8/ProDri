@@ -15,7 +15,7 @@ $userID=$_SESSION['userID'];
 for ($i=0; $i < $days; $i++) {
 
     $events = getRowsOfQuery("SELECT events.title ,\"{$begin->format('Y')}\" as year,\"{$begin->format('m')}\"  as month,
-	\"{$begin->format('d')}\" as day,time(events.startTime),addTime(time(events.startTime),duration),events.nodeID 
+	\"{$begin->format('d')}\" as day,time(events.startTime),addTime(time(events.startTime),duration),events.nodeID as nodeID
         FROM `unavaliable_timeslots` events
         LEFT JOIN `timeslot_repetitions` EM2 ON EM2.repetition_type = 'weekday' AND EM2.timeslotID=events.ID
         WHERE ((year(startTime)=".$begin->format('Y')." AND month(startTime)=".$begin->format('m')." AND day(startTime)=".$begin->format('d').")
@@ -33,7 +33,7 @@ for ($i=0; $i < $days; $i++) {
 				'start' => $curEvent[1].'-'.$curEvent[2].'-'.$curEvent[3].'T'.$curEvent[4],
 				'end' => $curEvent[1].'-'.$curEvent[2].'-'.$curEvent[3].'T'.$curEvent[5],
 				'overlap' => false,
-				/*'nodeID' => ($curEvent[6]===null?"":$curEvent[6]), /*error here */
+				'nodeID' => (isset($curEvent[6])?$curEvent[6]:""),
 				'canEdit' => false,
 				'regular' => (substr($curEvent[0],0,4)=="WORK")?false:true,
 				'color' => (substr($curEvent[0],0,4)=="WORK")?"orange":""

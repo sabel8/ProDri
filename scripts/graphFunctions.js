@@ -282,23 +282,21 @@ function checkForInput(nodeID) {
 //when the query has been submitted
 function getNodeData() {
 	//x and y values are in mousePos variable
-	let x = mousePos[0];
-	let y = mousePos[1];
+	let x = Math.floor(mousePos[0]);
+	let y = Math.floor(mousePos[1]);
 	let taskName = d3.select("#nodeTitle").node().value;
 
 	var selectEl = d3.select("#professionSelect").node();
 	let profession = selectEl.options[selectEl.selectedIndex].value;
 
 	selectEl = d3.select("#personSelect").node();
-	//let resPerson = selectEl.options[selectEl.selectedIndex].value;
-	let resPerson = null;
 
-	let duration = d3.select("#nodeDuration").node().value;
+	//let duration = d3.select("#nodeDuration").node().value;
 	let raci = document.querySelector('input[name="nodeRaci"]:checked').value;
-	//getting description... TODO
+	let desc = $("#nodeDescription").val();
 
 	//VALIDATION MISSING
-	return new Node(getValidID(nodes),taskName,x,y,0,profession,resPerson,Number(duration),raci,curProcessID.toString());
+	return new Node(getValidID(graphObj.nodes),taskName,x,y,0,profession,null,null,raci,null,desc);
 	//VALIDATION MISSING
 }
 

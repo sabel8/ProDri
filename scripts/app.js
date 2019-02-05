@@ -15,11 +15,10 @@ getNodesAndEdges(curProcessID);//TODO --> dynamic
 //the whole functionality starts after the page has loaded
 window.onload = function() {	
 	//dimensions for the main svg element
-	var width = d3.select("#body").node().offsetWidth-40,
 	height = 400;
 
 	graphObj = new Graph(nodes,edges,true,"newNodeModalTrigger","objectInfoModalTrigger",false);
-	d3.select("#mainDiv").node().appendChild(graphObj.getSVGElement(width,height));
+	d3.select("#mainDiv").node().appendChild(graphObj.getSVGElement("100%",height));
 	reviseInAndOutputs();
 	redraw();
 };//end of window.onload

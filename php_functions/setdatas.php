@@ -1,12 +1,11 @@
 <?php 
 require_once("../config.php");
-
+global $connection;
 // get the parameters from URL
 $q = $_REQUEST["q"];
-$p = $_REQUEST["p"];
+$p = isset($_REQUEST["p"])?$_REQUEST["p"]:null;
 if ($q=="insert") {
 	$p = explode(",",$p);
-	global $connection;
 	switch ($p[0]) {
 		case "processes":
 			//checks if there is assigned project or not
@@ -117,7 +116,6 @@ if ($q=="insert") {
 } else if ($q=="delete") {
 
 	$p = explode(",",$p);
-	global $connection;
 	$query = $connection->prepare("DELETE FROM ".$p[0]." WHERE ID=?");
 
 	confirm($query);
@@ -131,7 +129,6 @@ if ($q=="insert") {
 
 
 } else if ($q=="recomStatusChange"){
-	global $connection;
 	$query = $connection->prepare("UPDATE abstract_processes SET status=? WHERE ID=?");
 
 	confirm($query);
@@ -145,7 +142,6 @@ if ($q=="insert") {
 
 
 } else if ($q=="newProcess"){
-	global $connection;
 	$query = $connection->prepare("INSERT INTO abstract_processes (ID,title,submitterPersonID,processGroupID) 
 	VALUES (NULL,?,?,?)");
 
@@ -171,7 +167,6 @@ if ($q=="insert") {
 
 
 } else if ($_POST["q"]=="withdraw") {
-	global $connection;
 	$recomID = $_POST["p"];
 	$query = $connection->prepare("DELETE FROM nodes WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
 	$query->bind_param("i",$recomID);
@@ -204,5 +199,64 @@ if ($q=="insert") {
 	} else {
 	    echo "Error while recommendation nodes deletion!";
 	}
+} else if ($_POST["q"]=="newAbstractProcess") {
+	$nodes = json_decode($_POST['nodes'],true);
+	$edges = json_decode($_POST['edges'],true);
+	/* print_r($_POST);echo "<br><br>";
+	print_r($nodes);echo "<br><br>".count($nodes)."<br><br>";
+	print_r($edges);  */
+	$desc = $_POST['desc'];
+	$title = $_POST['title'];
+	//return;
+	$pgID;$apID;
+
+	//creating the new process group
+	$query=$connection->prepare("INSERT INTO process_groups (name,description) VALUES (?,?)");
+	$query->bind_param("ss",$title,$desc);
+	if($query->execute()) {
+		$pgID = $query->insert_id;
+	} else {echo "ERROR creating the new process group!";return;}
+
+	//creating the new abstract process
+	$query=$connection->prepare("INSERT INTO abstract_processes (title,submitterPersonID,processGroupID,
+	status,description) VALUES (?,?,?,?,?)");
+	$sub = "LEGACY PROCESS: ".$title;
+	$personID=0;/*change this to dynamic*/
+	$status = 1; //make live instantly
+	$query->bind_param("siiis",$sub,$personID,$pgID,$status,$desc);
+	if($query->execute()) {
+		$apID = $query->insert_id;
+	} else {echo "ERROR creating the new abstract process!";return;}
+
+	//assigning the abstract process' ID to the process group
+	$query=$connection->prepare("UPDATE process_groups SET latestVerProcID=? WHERE ID=?");
+	$query->bind_param("ii",$apID,$pgID);
+	if (!$query->execute()) {
+		echo "ERROR connecting the ap with the pg!";return;
+	}
+
+	//creating the nodes of the abstract process
+	for ($i=0; $i < count($nodes); $i++) {
+		$curNode=$nodes[$i];
+		$query=$connection->prepare("INSERT INTO abstract_nodes (nodeID,name,xCord,yCord,professionID,
+		raci,abstractProcessID,description) VALUES (?,?,?,?,?,?,?,?)");
+		$query->bind_param("isiiisis",$curNode['ID'],$curNode['txt'],$curNode['x'],$curNode['y'],$curNode['knowledgeArea'],
+		$curNode['RACI'],$apID,$curNode['desc']);
+		if(!$query->execute()) {
+			echo "ERROR creating a node to the new process.";return;
+		}
+	}
+
+	//creating the edges of the abstarct process
+	for ($i=0; $i < count($edges); $i++) { 
+		$curEdge = $edges[$i];
+		$query = $connection->prepare("INSERT INTO abstract_edges (fromNodeID,toNodeID,abstractProcessID) VALUES (?,?,?)");
+		$query->bind_param("iii",$curEdge['fromNodeID'],$curEdge['toNodeID'],$apID);
+		if(!$query->execute()) {
+			echo "ERROR creating a node to the new process.";return;
+		}
+	}
+
+	echo "<b>SUCCESSFUL CREATION</b>";
 }
 ?>

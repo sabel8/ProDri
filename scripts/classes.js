@@ -8,6 +8,7 @@ class Node {
 		this.y = y;
 		this.processID = processID;
 		this.desc = desc;
+		this.RACI = RACI;
 		if (txt==="START"){
 			this.status = 2;
 			this.duration=0;
@@ -15,10 +16,13 @@ class Node {
 			this.status = 0;
 			this.duration=0;
 		} else {
+			/*this.knowledgeArea = getProfessionFromID(knowledgeArea);
+			this.responsiblePerson = getPersonFromID(responsiblePerson);
+			this.processName = (processID==null?null:getProcessNameFromID(this.processID));*/
 			this.knowledgeArea = knowledgeArea;
 			this.responsiblePerson = responsiblePerson;
+			this.processName = (processID==null?null:this.processID);
 			this.duration = duration;
-			this.RACI = RACI;
 			this.output = 0;
 			this.input = 0;
 			// 0 : not yet started
@@ -32,49 +36,49 @@ class Node {
 		}
 
 		this.toString = function(){
-			return "ID: "+this.ID
-			+"; text: "+this.txt
-			+"; x: "+this.x
-			+"; y: "+y
-			+"; status: "+this.status
-			+"; output: "+this.output
-			+"; input: "
-			+this.input+"; knowledgeArea: "+getProfessionFromID(this.knowledgeArea)
-			+"; res.person: "+getPersonFromID(this.responsiblePerson)
-			+"; duration: "+this.duration
-			+"; RACI: "+this.RACI
-			+"; Process Name: "+getProcessNameFromID(this.processID);
-		}
+			return "ID: "+this.ID+
+			"; text: "+this.txt+
+			"; x: "+this.x+
+			"; y: "+y+
+			"; status: "+this.status+
+			"; output: "+this.output+
+			"; input: "+this.input+
+			"; knowledgeArea: "+this.knowledgeArea+
+			"; res.person: "+this.responsiblePerson+
+			"; duration: "+this.duration+
+			"; RACI: "+this.RACI+
+			"; Process Name: "+this.processName;
+		};
 
 		this.getRelevantData = function() {
 
 			if (this.txt==="START") {
-				return "ID: "+this.ID
-				+"; text: "+this.txt
-				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Description: \""+this.desc+"\"";
+				return "ID: "+this.ID+
+				"; text: "+this.txt+
+				(processID==null?"":"; Process Name: "+this.processName)+
+				"; Description: \""+this.desc+"\"";
 
 			} else if (this.txt==="FINISH") {
-				return "ID: "+this.ID
-				+"; text: "+this.txt
-				+"; status: "+this.status
-				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Description: \""+this.desc+"\"";
+				return "ID: "+this.ID+
+				"; text: "+this.txt+
+				"; status: "+this.status+
+				(processID==null?"":"; Process Name: "+this.processName)+
+				"; Description: \""+this.desc+"\"";
 
 			} else {
-				return "ID: "+this.ID
-				+"; text: "+this.txt
-				+"; status: "+this.status
-				+"; output: "+this.output
-				+"; input: "+this.input
-				+"; knowledgeArea: "+getProfessionFromID(this.knowledgeArea)
-				+"; res.person: "+getPersonFromID(this.responsiblePerson)
-				+"; duration: "+this.duration
-				+"; RACI: "+this.RACI
-				+"; Process Name: "+getProcessNameFromID(this.processID)
-				+"; Description: \""+this.desc+"\"";
+				return "ID: "+this.ID+
+				"; text: "+this.txt+
+				"; status: "+this.status+
+				"; output: "+this.output+
+				"; input: "+this.input+
+				"; profession: "+this.knowledgeArea+
+				"; responsible person: "+this.responsiblePerson+
+				"; duration: "+this.duration+
+				"; RACI: "+this.RACI+
+				(processID==null?"":"; Process Name: "+this.processName)+
+				"; Description: \""+this.desc+"\"";
 			}
-		}
+		};
 	}
 
 	getColor(){
@@ -128,7 +132,7 @@ function insertText(gEl, id, title) {
 		el.append("tspan").html(title).style("font-weight","bold").attr('x', 0).attr('dy', '5');
 	}
 	
-};
+}
 
 function getNodeByID(nodeID) {
 	let nodes = graphObj.nodes;
@@ -226,9 +230,8 @@ class Edge {
 		this.fromNodeID = fromNodeID;
 		this.toNodeID = toNodeID;
 		this.toString = function(){
-			return "ID: "+this.ID+"; fromNodeID: "+this.fromNodeID
-			+"; toNodeID: "+toNodeID;
-		}
+			return "ID: "+this.ID+"; fromNodeID: "+this.fromNodeID+"; toNodeID: "+toNodeID;
+		};
 	}
 
 }
@@ -331,7 +334,6 @@ class Graph{
 		this.allowedCreation = allowedCreation;
 		this.newNodeModalTriggerID = newNodeModalTriggerID;
 		this.objectInfoModalTriggerID = objectInfoModalTriggerID;
-		this.svg;
 		justSpectating=justSpectate;
 		isAbstract=abstract;
 	}
@@ -412,7 +414,6 @@ class Graph{
 
 	redraw() {
 		var thisGraph = this;
-		
 		//clearing pathes to be able to redraw them
 		d3.selectAll("#graph path").remove();
 		
@@ -485,9 +486,9 @@ class Graph{
 		var g = d3.select("#graph").selectAll("g")
 		.data(nodes).enter()
 		.append("g")
-		.attr("id",function(d,i){return "gNum"+d.ID})
+		.attr("id",function(d,i){return "gNum"+d.ID;})
 		.attr("transform", function(d){
-			return "translate("+d.x+","+d.y+")"
+			return "translate("+d.x+","+d.y+")";
 		})
 		.on("mouseenter", function(d){
 			toNode = d;
@@ -510,70 +511,50 @@ class Graph{
 		})
 		.on("mouseup",function(d){shiftKeyPressed=false})
 		.on("click", function(d,i){
-			//changing status on ctrl+click
-			if (d3.event.ctrlKey) {
-				if (justSpectating){
-					alert("You cannot change a node's status in spectating mode.");
-					return;
+			//only shows if not selected yet
+			if (selectedNode!=d) {
+				if (selectedNode!=null) {
+					d3.select("#nodeNum"+selectedNode.ID).attr("fill",justSpectating==true?"beige":selectedNode.getColor());
 				}
-				selectedNode=null;
-				var curNode = nodes[i];
-				if(curNode.input === 0){
-					alert("Cannot change this node's status.");
-					return;
+				selectedEdge=null;
+				selectedNode=d;
+				d3.select("#nodeNum"+d.ID).attr("fill","gold");
+				d3.select("#nodeNum"+d.ID).attr("fill","gold");
+
+				//setting up the modal with the text
+				d3.select("#objectName").text("Node: "+d.txt);
+				var infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>");
+				d3.select("#objectInfo").html(infoSplitted);
+				d3.select("#"+thisGraph.objectInfoModalTriggerID).node().click();
+				//disable status changing on start and finish nodes
+				if (d.txt!="START" && d.txt!="FINISH") {
+					d3.select("#statusSelect").style("display","block");
 				}
-				if (curNode.status!=2) {
-					curNode.status++;
-					if (curNode.status == 2) {
-						curNode.output = 1;
-					}
+
+				//setting the current status to the dropdown
+				var statSelect = d3.select("#statusSelect").node();
+				switch(d.status) {
+					case 0:
+					statSelect.value = "notStartedOption";
+					break;
+					case 1:
+					statSelect.value = "inProgressOption";
+					break;
+					case 2:
+					statSelect.value = "doneOption";
+					break;
 				}
-				reviseInAndOutputs();
-				redraw();
+
+			//if selected, deselect it
+			} else {
+				d3.select("#nodeNum"+d.ID).attr("fill",function (d) {
+					if (isAbstract)
+						return "beige";
+					return d.getColor();
+				});
+				selectedNode=null;					
 			}
-			//simple click shows info about the node
-			else {
-				//only shows if not selected yet
-				if (selectedNode!=d) {
-					selectedEdge=null;
-					selectedNode=d;
-					d3.select("#nodeNum"+d.ID).attr("fill","gold");
-
-					//setting up the modal with the text
-					d3.select("#objectName").text("Node: "+d.txt);
-					var infoSplitted = d.getRelevantData().replace(new RegExp("; ", 'g'), "<br>"); //this takes too much time
-					d3.select("#objectInfo").html(infoSplitted);
-					d3.select("#"+thisGraph.objectInfoModalTriggerID).node().click();
-					//disable status changing on start and finish nodes
-					if (d.txt!="START" && d.txt!="FINISH") {
-						d3.select("#statusSelect").style("display","block");
-					}
-
-					//setting the current status to the dropdown
-					var statSelect = d3.select("#statusSelect").node();
-					switch(d.status) {
-						case 0:
-						statSelect.value = "notStartedOption";
-						break;
-						case 1:
-						statSelect.value = "inProgressOption";
-						break;
-						case 2:
-						statSelect.value = "doneOption";
-						break;
-					}
-
-				//if selected, deselect it
-				} else {
-					d3.select("#nodeNum"+d.ID).attr("fill",function (d) {
-						if (isAbstract)
-							return "beige";
-						return d.getColor();
-					})
-					selectedNode=null;					
-				}
-			}
-		})
+			})
 		//assingning the functions to dragging
 		.call(d3.drag()
 		.on("start", thisGraph.dragstarted)
@@ -648,10 +629,9 @@ class Graph{
 			.attr("d","M"+d.x+","+d.y+"l"+moveEdgeX+","+moveEdgeY);
 		} else {
 			var draggedNode = getNodeByID(d.ID);
-			draggedNode.x += d3.event.dx;
-			draggedNode.y += d3.event.dy;
-			updateEdges();
-			updateNodes();
+			draggedNode.x += Math.floor(d3.event.dx);
+			draggedNode.y += Math.floor(d3.event.dy);
+			updateGraph();
 		}
 	}
 
@@ -660,8 +640,7 @@ class Graph{
 		if(justSpectating!=true){
 			createEdge();
 			shiftKeyPressed=false;
-			updateEdges();
-			updateNodes();
+			updateGraph();
 		}
 	}
 
@@ -673,16 +652,22 @@ class Graph{
 }
 
 function updateEdges(){
+	var edges = graphObj.edges;
 	for(let i=0;i<edges.length;i++){
 		var curEdge = edges[i];
-		d3.select("#edgeID"+curEdge.ID).attr("d",function(){ return getPath(curEdge)});
+		d3.select("#edgeID"+curEdge.ID).attr("d",function(){ return getPath(curEdge);});
 	}
 	d3.select("#new").remove();
 }
 
 function updateNodes(){
+	var nodes = graphObj.nodes;
 	for(var i=0;i<nodes.length;i++){
 		var curNode=nodes[i];
 		d3.select("#gNum"+curNode.ID).attr("transform","translate("+curNode.x+","+curNode.y+")");
 	}
+}
+
+function updateGraph(){
+	updateNodes();updateEdges();
 }

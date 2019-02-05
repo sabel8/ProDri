@@ -46,17 +46,12 @@ function getRowsOfQuery($queryTxt){
 	$result = $query->get_result();
 	$res="";
 	while ($row = $result->fetch_assoc()){
-		/*print_r($row);
-		print_r("row <br><br>");*/
 		foreach ($row as $key => $value) {
 			$res .= htmlspecialchars($value)."|";
 		}
 		$res=rtrim($res,"|")."~";
 	}
-	/*print_r($res);*/
 	$array= explode("~",$res);
-	/*print_r($array);
-	print_r("<br>res<br><br>");*/
 	return $array;
 }
 
@@ -70,7 +65,7 @@ function getTableHeader($arr,$id){
 	for ($i=0; $i < count($arr); $i++) { 
 		$innerhtml.='<th class="text-center">'.$arr[$i].'</th>';
 	}					
-	$innerhtml.='</tr></thead><tbody>';
+	$innerhtml.='</tr></thead><tbody class="text-center">';
 	return $innerhtml;
 }
 

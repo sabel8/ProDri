@@ -48,6 +48,7 @@ if (isset($_GET["auth"])){
 	<script src="scripts/externalDataFunctions.js"></script>
 	<script src="scripts/fetchGraphData.js"></script>
 	<script src="scripts/schedule.js"></script>
+	<script src="scripts/newProcess.js"></script>
 	<script type="text/javascript">
 		//desing values for svg elements
 		//speaks for themselves...

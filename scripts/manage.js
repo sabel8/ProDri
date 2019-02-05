@@ -3,6 +3,24 @@ var originalColor,prevRowID;
 var graphObj;
 var recomID,processID,title;
 
+$(document).ready(function () {
+	// page is now ready, initialize the datetimeselectors...
+	$('.form-inline input[type="text"]').datetimepicker({
+		format: "YYYY-MM-DD HH:mm",
+		dayViewHeaderFormat: 'YYYY MMMM',
+		minDate: new Date(),
+		useCurrent: false,
+		collapse: true,
+		locale: moment.locale(),
+		allowInputToggle: true,
+		showClose: true,
+		widgetPositioning: {
+			horizontal: 'auto',
+			vertical: 'top'
+		}
+	});
+});
+
 //sets a beautiful blue background for active
 //selected list item
 $(function(){

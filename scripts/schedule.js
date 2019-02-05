@@ -166,7 +166,7 @@ function setCalendar() {
 	$('#datetimepicker1').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
-		minDate: now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate() + " " + now.getHours() + ":" + now.getMinutes(),
+		minDate: new Date(),
 		useCurrent: false,
 		collapse: true,
 		locale: moment.locale(),
@@ -181,7 +181,7 @@ function setCalendar() {
 	$('#datetimepicker2').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
-		minDate: $('#datetimepicker1').data("DateTimePicker").minDate(),
+		minDate: new Date(),
 		useCurrent: false,
 		collapse: true,
 		locale: moment.locale(),
@@ -209,7 +209,7 @@ function setCalendar() {
 	$('#datetimepicker4').datetimepicker({
 		format: "YYYY-MM-DD HH:mm",
 		dayViewHeaderFormat: 'YYYY MMMM',
-		minDate: $('#datetimepicker3').data("DateTimePicker").minDate(),
+		minDate: new Date(),
 		useCurrent: false,
 		collapse: true,
 		locale: moment.locale(),
