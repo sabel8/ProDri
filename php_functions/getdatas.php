@@ -5,8 +5,8 @@ $q = $_REQUEST["q"];
 $res = "";
 if ($q=="nodes") {
 
-	$query = query("SELECT nodeID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,processID
-		FROM nodes WHERE processID=".$_REQUEST['p']);
+	$query = query("SELECT nodeID,txt,xCord,yCord,status,professionID,responsiblePersonID,duration,RACI,pg.name
+		FROM nodes n,process_groups pg,processes p WHERE p.processGroupID=pg.ID AND p.ID=n.processID AND n.processID=".$_REQUEST['p']."");
 	confirm($query);
 	while ($row = fetch_array($query)){
 		$res = $res . implode("|",$row) .";\n";

@@ -1,8 +1,9 @@
 <?php
 require_once("config.php");
-$_SESSION['userID']=1; //this is for developing only
-$userID=$_SESSION['userID'];
-$devmode=false;
+$_SESSION['userID']=1;
+$userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
+$devmode=1;
+
 
 //database manipulation according to POST
 if($_POST) {

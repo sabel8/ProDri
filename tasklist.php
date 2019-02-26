@@ -1,6 +1,8 @@
 <?php
 require_once("config.php");
-$userID=5;
+$_SESSION['userID']=1;
+$userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
+
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
@@ -36,10 +38,9 @@ if ($_POST) {
     }
   }
   // Redirect to this page, clearing the POST array
-  /* header("Location: " . $_SERVER['REQUEST_URI']);
-  exit(); */
+  header("Location: " . $_SERVER['REQUEST_URI']);
+  exit();
 }
-
 
 include(TEMPLATE.DS."header.php");
 
@@ -49,8 +50,11 @@ function getUserHTML($userID) {
   $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes: ($username)</b></h2><hr>";
   //getting the processes which the user is included in
 	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
-    FROM abstract_processes ap, process_groups pg,processes p, nodes n
-    WHERE n.responsiblePersonID=$userID AND pg.ID=ap.processGroupID
+    FROM abstract_processes ap
+    LEFT JOIN process_groups pg ON pg.ID=ap.processGroupID
+    LEFT JOIN processes p ON p.processGroupID=pg.ID
+    LEFT JOIN nodes n ON n.processID = p.ID
+    WHERE n.responsiblePersonID=$userID
     GROUP BY pg.ID ORDER BY pg.name, title");
 	$innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
 	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
@@ -144,7 +148,7 @@ function getUserHTML($userID) {
 	$innerhtml.='<a id="recommendationSelectModalTrigger" data-toggle="modal" href="#recommendationSelectModal" style="display:none"></a>';
 	$options="";
 	$recs=getRowsOfQuery("SELECT p.ID,pg.name,p.status,p.title,p.processGroupID FROM abstract_processes p,process_groups pg 
-    WHERE p.processGroupID=pg.ID");
+    WHERE p.processGroupID=pg.ID AND p.submitterPersonID=$userID");
 	for ($i=0;$i<count($recs)-1;$i++) {
     $curRec=explode("|",$recs[$i]);
     //setting the strings xss safe
@@ -167,24 +171,21 @@ function getUserHTML($userID) {
 	}
 	$numOfRows=count($recs);
 	$actionParam=htmlspecialchars($_SERVER["PHP_SELF"]);
-	$innerhtml.=<<<DEL
-<div id="recommendationSelectModal" class="modal fade" role="dialog">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal">&times;</button>
-				<h4 id="objectName" class="modal-title">Your recommendations</h4>
-			</div>
-			<div class="modal-body">
-					<div class="list-group" id="recommendationSelect">
-						$options
-					</div>
-			</div>
-		</div>
-
-	</div>
-</div>
-DEL;
+	$innerhtml.='<div id="recommendationSelectModal" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 id="objectName" class="modal-title">Your recommendations</h4>
+          </div>
+          <div class="modal-body">
+              <div class="list-group" id="recommendationSelect">
+               '.($options==""?"<b>You do not have any recommendations!</b>":$options).'
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>';
 	return $innerhtml;
 	
 }
@@ -209,7 +210,7 @@ $(document).ready( function () {
  
   <h2><b>Tasks (for: <?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0]; ?>)</b></h2>
   <?php
-  $innerhtml="";
+  $innerhtml="<hr>";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
      concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,'planned start',n.startTime
@@ -255,7 +256,6 @@ $(document).ready( function () {
             <input type="number" id="taskDurSecs'.$nodeRealID.'" name="taskDurSecs'.$nodeRealID.'"
               style="width:50px" min="0" value="'.$curTask[$n].'"> seconds<br>
             <input type="submit" class="btn btn-default" value="Submit"></form>';
-            //'.htmlspecialchars($_SERVER["PHP_SELF"]).'
             if ($durStat==1) {
               $innerhtml.="<td class='success'><p>ACCEPTED</p>".$curTask[$n]." seconds</td>";
             } else if ($durStat==="0") {
@@ -267,6 +267,15 @@ $(document).ready( function () {
           //actual start
           case 10:
             $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet started" : $curTask[$n]) ."</td>";
+            break;
+          //deliverables
+          case 16:
+            $innerhtml.='<td><form action="php_functions/uploadDel.php" method="post" enctype="multipart/form-data">
+                <input type="file" name="fileToUpload" id="fileToUpload">
+                <button type="submit" class="btn btn-primary" value="'.$nodeRealID.'" name="submit">
+                  <span class="glyphicon glyphicon-upload"></span>Upload File
+                </button>
+              </form></td>';
             break;
           //start/finish button
           case 17:
@@ -286,6 +295,8 @@ $(document).ready( function () {
       $innerhtml.="</tr>";
     }
     $innerhtml.="</tbody></table></div>";
+  } else {
+    $innerhtml.="<div class='alert alert-success'>There isn't any task for you at the moment.</div>";
   }
 
   echo $innerhtml;

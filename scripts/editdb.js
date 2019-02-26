@@ -259,23 +259,6 @@ function createRecord() {
 	tableSetup(activeLi);
 }
 
-
-//params[0] = 'table name'
-//rest is the inserted values
-function runInsert(params) {
-	var response;
-	var xmlhttp = new XMLHttpRequest();
-	xmlhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-			console.log("Parameters: "+params.toString())
-			response = this.responseText;
-		}
-	};
-	xmlhttp.open("GET", "php_functions/setdatas.php?q=insert&p="+params.toString(), false);
-	xmlhttp.send();
-	return response;
-}
-
 function deleteRecord(tableName, ID) {
 	var params = new Array(tableName.substring(0,tableName.length-8),ID);
 	var response;

@@ -215,24 +215,24 @@ if ($q=="insert") {
 	$query->bind_param("ss",$title,$desc);
 	if($query->execute()) {
 		$pgID = $query->insert_id;
-	} else {echo "ERROR creating the new process group!";return;}
+	} else {echo "ERROR creating the new process group! ".$query->error;return;}
 
 	//creating the new abstract process
 	$query=$connection->prepare("INSERT INTO abstract_processes (title,submitterPersonID,processGroupID,
 	status,description) VALUES (?,?,?,?,?)");
 	$sub = "LEGACY PROCESS: ".$title;
 	$personID=0;/*change this to dynamic*/
-	$status = 1; //make live instantly
+	$status = 2; //make live instantly
 	$query->bind_param("siiis",$sub,$personID,$pgID,$status,$desc);
 	if($query->execute()) {
 		$apID = $query->insert_id;
-	} else {echo "ERROR creating the new abstract process!";return;}
+	} else {echo "ERROR creating the new abstract process! ".$query->error;return;}
 
 	//assigning the abstract process' ID to the process group
 	$query=$connection->prepare("UPDATE process_groups SET latestVerProcID=? WHERE ID=?");
 	$query->bind_param("ii",$apID,$pgID);
 	if (!$query->execute()) {
-		echo "ERROR connecting the ap with the pg!";return;
+		echo "ERROR connecting the ap with the pg! ".$query->error;return;
 	}
 
 	//creating the nodes of the abstract process
@@ -240,10 +240,11 @@ if ($q=="insert") {
 		$curNode=$nodes[$i];
 		$query=$connection->prepare("INSERT INTO abstract_nodes (nodeID,name,xCord,yCord,professionID,
 		raci,abstractProcessID,description) VALUES (?,?,?,?,?,?,?,?)");
-		$query->bind_param("isiiisis",$curNode['ID'],$curNode['txt'],$curNode['x'],$curNode['y'],$curNode['knowledgeArea'],
+		$profession=($curNode['knowledgeArea']=="-1"?null:$curNode['knowledgeArea']);
+		$query->bind_param("isiiisis",$curNode['ID'],$curNode['txt'],$curNode['x'],$curNode['y'],$profession,
 		$curNode['RACI'],$apID,$curNode['desc']);
 		if(!$query->execute()) {
-			echo "ERROR creating a node to the new process.";return;
+			echo "ERROR creating a node to the new process. ".$query->error;return;
 		}
 	}
 
@@ -253,7 +254,7 @@ if ($q=="insert") {
 		$query = $connection->prepare("INSERT INTO abstract_edges (fromNodeID,toNodeID,abstractProcessID) VALUES (?,?,?)");
 		$query->bind_param("iii",$curEdge['fromNodeID'],$curEdge['toNodeID'],$apID);
 		if(!$query->execute()) {
-			echo "ERROR creating a node to the new process.";return;
+			echo "ERROR creating an edge to the new process. ".$query->error;return;
 		}
 	}
 

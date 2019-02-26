@@ -11,7 +11,7 @@ try {
 } catch (Exception $e) {
 	$begin =  new DateTime('now');
 }
-$userID=$_SESSION['userID'];
+$userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
 for ($i=0; $i < $days; $i++) {
 
     $events = getRowsOfQuery("SELECT events.title ,\"{$begin->format('Y')}\" as year,\"{$begin->format('m')}\"  as month,

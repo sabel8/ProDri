@@ -57,3 +57,13 @@ a {
 hr {
 	border-color:lightgrey
 }
+
+.processTitle h4 {
+	margin: 0;
+    display: inline-block;
+}
+.processTitle button {float:right}
+
+.form-group {
+	width: 100%;
+}

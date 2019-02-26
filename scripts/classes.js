@@ -9,6 +9,7 @@ class Node {
 		this.processID = processID;
 		this.desc = desc;
 		this.RACI = RACI;
+		this.knowledgeArea = knowledgeArea;
 		if (txt==="START"){
 			this.status = 2;
 			this.duration=0;
@@ -19,7 +20,6 @@ class Node {
 			/*this.knowledgeArea = getProfessionFromID(knowledgeArea);
 			this.responsiblePerson = getPersonFromID(responsiblePerson);
 			this.processName = (processID==null?null:getProcessNameFromID(this.processID));*/
-			this.knowledgeArea = knowledgeArea;
 			this.responsiblePerson = responsiblePerson;
 			this.processName = (processID==null?null:this.processID);
 			this.duration = duration;
@@ -343,7 +343,7 @@ class Graph{
 		var thisGraph = this;
 		var svg = this.svg;
 		d3.select(svg)
-			.attr("width", width)
+			.attr("width", "100%")
 			.attr("height", height)
 			.on("click",function(){
 				mousePos = d3.mouse(svg);

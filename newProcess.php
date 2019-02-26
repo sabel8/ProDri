@@ -1,14 +1,14 @@
 <?php 
 require_once("config.php");
-if ($_POST) {
-	//print_r($_POST);
-	// Redirect to this page with wiped _POST.
-	header("Location: " . $_SERVER['REQUEST_URI']);
-	exit();
+
+include(TEMPLATE.DS."header.php");
+if ($_SESSION['auth']!="po"){
+	die("Only the process owner can see this.");
 }
-include(TEMPLATE.DS."header.php");?>
+?>
 <div class="container">
 	<div id="formBody" class="well">
+		<a href='manage.php'><span class="glyphicon glyphicon-chevron-left"></span> Go back to processes</a>
 		<h2>Creating a new abstract process</h2>
 		<hr>
 		<div class="form-horizontal">

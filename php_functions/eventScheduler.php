@@ -1,5 +1,6 @@
 <?php
-require_once("../config.php");
+//require_once("../config.php");
+$printInfo=false;
 
 if (isset($_GET["processID"])) {
 	$processID = $_GET["processID"];
@@ -14,9 +15,6 @@ if (isset($_GET["processID"])) {
 	die("ProcessID or startTime is not set in GET.");
 }
 
-//getting the number of the nodes in the process
-$nodeCounter = getRowsOfQuery("SELECT count(ID) FROM nodes WHERE processID=$processID")[0];
-
 //array for counting how many node have been put into calendar
 $doneNodeIDs = [];
 
@@ -25,16 +23,17 @@ $pathes=[];
 deleteEventsOfProcess($processID);
 $critPath = calculateCriticalPath($processID);
 array_pop($critPath);
-print_r($critPath);echo" : critpath<br>";
+if($printInfo==true){print_r($critPath);}
+if($printInfo==true){echo " : critpath<br>";}
 fillInTaskEvent(null);
 
 function fillInTaskEvent($curEdges){
-	global $processID, $doneNodeIDs, $critPath;
+	global $processID, $doneNodeIDs, $critPath, $printInfo;
 	//the node with the text 'START'
 	if (count($doneNodeIDs) == 0) {
 		$startNodeID = getRowsOfQuery("SELECT nodeID FROM nodes WHERE txt='START' AND processID=$processID")[0];
 		$curEdges = getRowsOfQuery("SELECT toNodeID FROM edges WHERE processID=$processID AND fromNodeID=$startNodeID");
-		echo count($doneNodeIDs).". START";echo"<br>";
+		if($printInfo==true){echo count($doneNodeIDs).". START<br>";}
 		$doneNodeIDs[] = $startNodeID;
 		fillInTaskEvent($curEdges);
 	}else {
@@ -51,7 +50,7 @@ function fillInTaskEvent($curEdges){
 				array_pop($prevTasks);
 				//if all predecessors are scheduled
 				if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
-					echo "<br><hr><br>".  count($doneNodeIDs).". ";print_r($curTask[0])."<br>";
+					if($printInfo==true){echo "<br><hr><br>".  count($doneNodeIDs).". ";print_r($curTask[0])."<br>";}
 					scheduleTask($nodeID);
 					$doneNodeIDs[] = $nodeID;
 					//no longer taking it into consideration
@@ -73,7 +72,7 @@ function fillInTaskEvent($curEdges){
 			array_pop($prevTasks);
 			//if all predecessors are scheduled
 			if (count(array_intersect($prevTasks,$doneNodeIDs)) == count($prevTasks)) {
-				echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br><br>";
+				if($printInfo==true){echo count($doneNodeIDs).". ";print_r($curTask[0]);echo "<br><hr><br><br>";}
 				scheduleTask($nodeID);
 				$doneNodeIDs[] = $nodeID;
 				fillInTaskEvent(getRowsOfQuery("SELECT toNodeID FROM edges WHERE processID=$processID AND fromNodeID=$nodeID"));
@@ -85,14 +84,15 @@ function fillInTaskEvent($curEdges){
 
 
 function scheduleTask($taskID){
-	global $connection, $processID, $startTime;
+	global $connection, $processID, $startTime, $printInfo;
 	$realNodeID = (int) getRowsOfQuery("SELECT ID FROM nodes WHERE nodeID=$taskID AND processID=$processID")[0];
 	$nodeTitle = getRowsOfQuery("SELECT txt FROM nodes WHERE ID=$realNodeID")[0];
 	if ($nodeTitle=="START" OR $nodeTitle=="FINISH") {
 		return;
 	}
 	$predecessors = getRowsOfQuery("SELECT fromNodeID FROM edges WHERE processID=$processID AND toNodeID=$taskID");
-	print_r($predecessors);echo " : $nodeTitle task predecs<br>";
+	
+	if($printInfo==true){print_r($predecessors);echo " : $nodeTitle task predecs<br>";}
 	$userID=getRowsOfQuery("SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID")[0];
 	$remainingDur = (int) getRowsOfQuery("SELECT duration FROM nodes WHERE ID=$realNodeID")[0];
 
@@ -126,14 +126,16 @@ function scheduleTask($taskID){
 			$canBeStarted = strtotime($endOfFreeTime);
 		}
 		$remainingDur -= $curDur;
-		$partNo=$eventCounter>1?" (part $eventCounter)":"";
-		print_r($freeStart);echo ":from $nodeTitle $partNo<br>";
-		print_r(date('Y-m-d H:i:s',strtotime($freeStart)+$curDur));echo ":end $nodeTitle $partNo<br>";
+		$partNo=$eventCounter>1?" (part $eventCounter)":"";	
+		if($printInfo==true){
+			print_r($freeStart);echo ":from $nodeTitle $partNo<br>";
+			print_r(date('Y-m-d H:i:s',strtotime($freeStart)+$curDur));echo ":end $nodeTitle $partNo<br>";
+		}
 		$sql = "INSERT INTO unavaliable_timeslots (title,nodeID,personID,startTime,duration) 
 		VALUES (CONCAT('WORK: ','$nodeTitle','$partNo'), $realNodeID,(SELECT responsiblePersonID FROM nodes WHERE ID=$realNodeID),
 		'$freeStart',SEC_TO_TIME($curDur))";
 		//running the query
-		if (!mysqli_query($connection, $sql)) {
+		if (!mysqli_query($connection, $sql) ) {
 			echo "Error: " . $sql . "<br>" . mysqli_error($connection);
 		}
 	}
@@ -227,7 +229,7 @@ function getEndOfFreeTimeslot($userID,$time) {
 }
 
 function calculateCriticalPath($processID) {
-	global $pathes;
+	global $pathes, $printInfo;
 	$curPath = [];
 	$durations = [];
 	//add START node
@@ -271,9 +273,11 @@ function calculateCriticalPath($processID) {
 	}
 
 	//printing the pathes and their durations
-	for ($i=0; $i < count($pathes); $i++) { 
-		echo implode(" -> ",$pathes[$i]) ."<br>";
-		echo $durations[$i]."<br>";
+	if ($printInfo==true) {
+		for ($i=0; $i < count($pathes); $i++) { 
+			echo implode(" -> ",$pathes[$i]) ."<br>";
+			echo $durations[$i]."<br>";
+		}
 	}
 
 	$maxIndex = array_keys($durations,max($durations))[0];

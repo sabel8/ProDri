@@ -42,13 +42,27 @@ if (isset($_GET["auth"])){
 	<script src="https://d3js.org/d3.v5.min.js"></script>
 
 	<!-- Own js libraries -->
+	<?php
+	//connecting the right javascript files
+	//for the corresponding page
+	$uri=explode('?', $_SERVER['REQUEST_URI'], 2)[0];
+	$root="prodri";
+	switch($uri){
+		case "/$root/manage.php":
+			echo '<script src="scripts/manage.js"></script>';break;
+		case "/$root/newProcess.php":
+			echo '<script src="scripts/newProcess.js"></script>
+			<script src="scripts/editdb.js"></script>';break;
+		case "/$root/editdatabase.php":
+			echo '<script src="scripts/editdb.js"></script>';break;
+		case "/$root/schedule.php":
+			echo '<script src="scripts/schedule.js"></script>';break;
+	}
+	?>
 	<script src="scripts/classes.js"></script>
-	<script src="scripts/editdb.js"></script>
 	<script src="scripts/graphFunctions.js"></script>
 	<script src="scripts/externalDataFunctions.js"></script>
 	<script src="scripts/fetchGraphData.js"></script>
-	<script src="scripts/schedule.js"></script>
-	<script src="scripts/newProcess.js"></script>
 	<script type="text/javascript">
 		//desing values for svg elements
 		//speaks for themselves...
@@ -84,6 +98,22 @@ if (isset($_GET["auth"])){
 		$(document).ready(function(){
     		$('[data-toggle="tooltip"]').tooltip();   
 		});
+
+		//params[0] = 'table name'
+		//rest is the inserted values
+		function runInsert(params) {
+			var response;
+			var xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					console.log("Parameters: "+params.toString());
+					response = this.responseText;
+				}
+			};
+			xmlhttp.open("GET", "php_functions/setdatas.php?q=insert&p="+params.toString(), false);
+			xmlhttp.send();
+			return response;
+		}
 
 	</script>
 	

@@ -5,20 +5,28 @@ var recomID,processID,title;
 
 $(document).ready(function () {
 	// page is now ready, initialize the datetimeselectors...
-	$('.form-inline input[type="text"]').datetimepicker({
-		format: "YYYY-MM-DD HH:mm",
+	$('.col-sm-3 input[type="text"]').datetimepicker({
+		format: "YYYY-MM-DD HH:mm:ss",
 		dayViewHeaderFormat: 'YYYY MMMM',
-		minDate: new Date(),
+		//minDate: $(this).val()==""?new Date():"",
 		useCurrent: false,
 		collapse: true,
 		locale: moment.locale(),
 		allowInputToggle: true,
 		showClose: true,
 		widgetPositioning: {
-			horizontal: 'auto',
-			vertical: 'top'
-		}
+            horizontal: 'auto',
+            vertical: 'bottom'
+         }
 	});
+
+	$('#abstractProcessList li').click(function(e) {
+        e.preventDefault();
+        $that = $(this);
+        $that.parent().find('li').removeClass('active');
+		$that.addClass('active');
+		
+    });
 });
 
 //sets a beautiful blue background for active
@@ -208,7 +216,8 @@ function insertAfter(newNode, referenceNode) {
     referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
 }
 
-function changeRecommendationStatus(recomAbsProcID,status) {
+function changeRecommendationStatus(recomAbsProcID,status,absProcID) {
+	$("#"+absProcID+"control"+recomAbsProcID).html("<i>Loading...</i>");
 	//refuse button deletes row
 	if(status==3){
 		removeRecommendation(recomAbsProcID);
@@ -234,7 +243,6 @@ function changeRecommendationStatus(recomAbsProcID,status) {
 					break;
 				//ACCEPT BUTTON
 				case 2:
-					//setting up backup withdraw table data
 					console.log(runInsert(["log",17,recomAbsProcID]));
 					//making the recommendation live
 					console.log(runInsert(["makeRecLive",recomAbsProcID]));
