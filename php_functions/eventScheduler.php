@@ -1,6 +1,6 @@
 <?php
-//require_once("../config.php");
-$printInfo=false;
+require_once(__DIR__."/../config.php");
+$printInfo=true;
 
 if (isset($_GET["processID"])) {
 	$processID = $_GET["processID"];
@@ -82,7 +82,6 @@ function fillInTaskEvent($curEdges){
 
 }
 
-
 function scheduleTask($taskID){
 	global $connection, $processID, $startTime, $printInfo;
 	$realNodeID = (int) getRowsOfQuery("SELECT ID FROM nodes WHERE nodeID=$taskID AND processID=$processID")[0];
@@ -114,19 +113,33 @@ function scheduleTask($taskID){
 		}
 	}
 	$eventCounter=0;
+	//set plannedStart of the node
+	$setPlannedStartSQL = "UPDATE nodes SET plannedStart=\"".
+		getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted))."\" WHERE ID=$realNodeID";
+	if (!mysqli_query($connection, $setPlannedStartSQL)) {
+		echo "Error: " . $setPlannedStartSQL . "<br>" . mysqli_error($connection);
+	}
 	while ($remainingDur > 0){
 		$eventCounter++;
 		$freeStart = getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted));
 		$endOfFreeTime = getEndOfFreeTimeslot($userID,$freeStart);
 		$curDur = strtotime($endOfFreeTime) - strtotime($freeStart);
+		//if this fills the task
 		if ($remainingDur - $curDur < 0) {
 			$curDur = $remainingDur;
 			$canBeStarted = strtotime($freeStart) + $curDur;
+			$endOfTask = date('Y-m-d H:i:s',strtotime($freeStart) + $curDur);
+			//set plannedFinish of the node
+			$setPlannedFinishSQL = "UPDATE nodes SET plannedFinish='$endOfTask' WHERE ID=$realNodeID";
+			if (!mysqli_query($connection, $setPlannedFinishSQL)) {
+				echo "Error: " . $setPlannedFinishSQL . "<br>" . mysqli_error($connection);
+			}
+			$partNo=$eventCounter>1?" (part ". $eventCounter .")":"";
 		} else {
 			$canBeStarted = strtotime($endOfFreeTime);
+			$partNo=" (part ". $eventCounter .")";
 		}
 		$remainingDur -= $curDur;
-		$partNo=$eventCounter>1?" (part $eventCounter)":"";	
 		if($printInfo==true){
 			print_r($freeStart);echo ":from $nodeTitle $partNo<br>";
 			print_r(date('Y-m-d H:i:s',strtotime($freeStart)+$curDur));echo ":end $nodeTitle $partNo<br>";
@@ -143,9 +156,14 @@ function scheduleTask($taskID){
 
 function deleteEventsOfProcess($processID) {
 	global $connection;
-	if (!mysqli_query($connection, "DELETE t FROM unavaliable_timeslots t INNER JOIN nodes n ON n.ID=t.nodeID
-		WHERE n.processID=$processID AND NOT t.personID=0")) {
-		echo "Error deleting record: " . mysqli_error($conn);
+	if (!($query = $connection->prepare("DELETE FROM unavaliable_timeslots 
+	WHERE NOT personID=0 AND nodeID IN (SELECT ID FROM nodes WHERE processID=?)"))) {
+		echo "Prepare failed: (" . $connection->errno . ") " . $connection->error;
+	}
+	$query->bind_param("i",$processID);
+
+	if (!$query->execute()) {
+		echo "Error deleting record: " . mysqli_error($connection);
 	}
 }
 
@@ -215,7 +233,7 @@ function getEndOfFreeTimeslot($userID,$time) {
 	
 
 	$nextBusyException=getRowsOfQuery("SELECT startTime FROM timeslot_exceptions
-		WHERE startTime>'$time' AND personID=$userID AND avaliable=false");
+		WHERE startTime>'$time' AND personID=$userID AND avaliable=false ORDER BY startTime ASC LIMIT 1");
 
 	if(count($nextBusyException)>1 && count($regular)>1) {
 		$regular = explode("|",$regular[0])[0];

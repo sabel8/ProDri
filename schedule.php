@@ -2,7 +2,7 @@
 require_once("config.php");
 $_SESSION['userID']=1;
 $userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
-$devmode=1;
+$devmode=0;
 
 
 //database manipulation according to POST

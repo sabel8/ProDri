@@ -9,7 +9,8 @@ if (count($_POST)>0) {
 			//avoiding repetitive form submission
 			global $connection;
 			//new process creating
-			if (isset($_POST['abstractProcessList']) AND isset($_POST['projectSelect']) AND isset($_POST['createProcess'])){
+			if (isset($_POST['abstractProcessList']) AND isset($_POST['projectSelect']) 
+				AND isset($_POST['createProcess'])){
 				//create new process,nodes and edges
 				$absProcID = (int) $_POST['abstractProcessList'];
 				$projID = (int) $_POST['projectSelect'];
@@ -18,8 +19,8 @@ if (count($_POST)>0) {
 				$query->bind_param("iii",$projID,$absProcID,$absProcID);
 				if ($query->execute()) {
 					$processID = $query->insert_id;
-					$query = $connection->prepare("INSERT INTO nodes (nodeID,txt,xCord,yCord,professionID,
-						raci,processID,description)	SELECT nodeID,name,xCord,yCord,professionID,raci,
+					$query = $connection->prepare("INSERT INTO nodes (nodeID,txt,xCord,yCord,status,professionID,
+						raci,processID,description)	SELECT nodeID,name,xCord,yCord,CASE WHEN name='START' THEN 9 ELSE 0 END,professionID,raci,
 						?,description FROM abstract_nodes WHERE abstractProcessID=?");
 					$query->bind_param("ii",$processID,$absProcID);
 					if ($query->execute()) {
@@ -69,6 +70,7 @@ if (count($_POST)>0) {
 					if ($query->execute()) {
 						$query->bind_result($numOfBadNodes);
 						$query->fetch();
+						$query->close();
 						if ($numOfBadNodes==0){
 							$_GET['processID'] = $procID;
 							$_GET['startTime'] = strtotime($startDate);
@@ -77,7 +79,6 @@ if (count($_POST)>0) {
 							//THROW ERROR
 							//some tasks are not filled with duration or person
 						}
-						$query->close();
 					}
 					
 				} else {
@@ -108,25 +109,26 @@ if (count($_POST)>0) {
 						}
 					}
 				}break;
+			} else if (isset($_POST['saveEstimationDeadline'])) {
+				$procID=$_POST['saveEstimationDeadline'];
+				$date=$_POST['estimationDeadline'.$procID];
+				$query = $connection->prepare("UPDATE processes SET estimationDeadline=? WHERE ID=?");
+				$query->bind_param("si",$date,$procID);
+				if ($query->execute()) {
+				} else {
+					die("Error while updating estimationDeadline!");
+				}
+				break;
 			}
 			//TODO : next should be like the upper part
 			foreach ($_POST as $key => $value) {
+				//accepting or refusing an estimation
 				if(substr($key,0,10)=="estimation" and $_POST[$key]!="") {
 					$decision = $value=="Accept"?true:false;
 					$query=$connection->prepare("UPDATE nodes SET durationStatus=? WHERE ID=?");
 					$query->bind_param("ii",$decision,intval(substr($key,10)));
 					if (!$query->execute()) {
 						die("Error while updating records!");
-					}
-					break;
-				} else if (substr($key,0,22)=="saveEstimationDeadline") {
-					$procID=substr($key,22);
-					$date=$_POST['estimationDeadline'.$procID];
-					$query = $connection->prepare("UPDATE processes SET estimationDeadline=? WHERE ID=?");
-					$query->bind_param("si",$date,$procID);
-					if ($query->execute()) {
-					} else {
-						die("Error while updating estimationDeadline!");
 					}
 					break;
 				} else if (substr($key,0,15)=="saveTaskReserve") {
@@ -157,6 +159,35 @@ if (count($_POST)>0) {
 			//if post is set, update database then clear post
 			//avoiding repetitive form submission
 			// Execute code (such as database updates) here.
+			if (isset($_POST['deleteProcessGroup'])){
+				$procID = $_POST['deleteProcessGroup'];
+				$query = $connection->prepare("DELETE FROM abstract_nodes
+					WHERE abstractProcessID IN (SELECT ID FROM abstract_processes WHERE processGroupID=?)");
+				$query->bind_param("i",$procID);
+				if (!$query->execute()) {
+					die("Error deleting abstract process nodes!");
+				}
+
+				$query = $connection->prepare("DELETE FROM abstract_edges
+					WHERE abstractProcessID IN (SELECT ID FROM abstract_processes WHERE processGroupID=?)");
+				$query->bind_param("i",$procID);
+				if (!$query->execute()) {
+					die("Error deleting abstract process edges!");
+				}
+
+				$query = $connection->prepare("DELETE FROM abstract_processes WHERE processGroupID=?");
+				$query->bind_param("i",$procID);
+				if (!$query->execute()) {
+					die("Error deleting abstract processes!");
+				}
+				
+				$query = $connection->prepare("DELETE FROM process_groups WHERE ID=?");
+				$query->bind_param("i",$procID);
+				if (!$query->execute()) {
+					die("Error deleting process group!");
+				}
+				break;
+			}
 			foreach ($_POST as $key => $value) {
 				global $connection;
 				if (substr($key,0,4)=="raci") {
@@ -167,6 +198,9 @@ if (count($_POST)>0) {
 						$query = $connection->prepare("UPDATE abstract_nodes SET raci=? WHERE ID=?");
 						$query->bind_param("si",$value,intval(substr($key,4)));
 					}
+					if (!$query->execute()) {
+						echo "Error while updating raci! ".mysqli_error($connection)."<br>";
+					}
 				} else if(substr($key,0,12)=="professionOf") {
 					if ($value==-1) {
 						$query=$connection->prepare("UPDATE abstract_nodes SET professionID=NULL WHERE ID=?");
@@ -175,19 +209,16 @@ if (count($_POST)>0) {
 						$query=$connection->prepare("UPDATE abstract_nodes SET professionID=? WHERE ID=?");
 						$query->bind_param("ii",$value,intval(substr($key,12)));
 					}
-				}
-				
-				if ($query->execute()) {
-					echo mysqli_error($connection);
-				} else {
-					echo "Error while updating records! ".mysqli_error($connection)."<br>";
+					if (!$query->execute()) {
+						echo "Error while updating profession! ".mysqli_error($connection)."<br>";
+					}
 				}
 			}
 			break;
 	}
 	// Redirect to this page with wiped _POST.
-	/* header("Location: " . $_SERVER['REQUEST_URI']);
-	exit(); */
+	header("Location: " . $_SERVER['REQUEST_URI']);
+	exit();
 }
 
 include(TEMPLATE.DS."header.php");
@@ -371,8 +402,8 @@ function getProjectManagerHTML(){
 							value='$deadline' name='estimationDeadline$processID'>
 					</div>
 						<div class='col-sm-3'>
-						<button type='submit' class='btn btn-primary' name='saveEstimationDeadline$processID'>
-							Save estimation timeframe
+						<button type='submit' class='btn btn-primary' name='saveEstimationDeadline'
+							value='$processID'>Save estimation timeframe
 						</button>
 					</div>
 				</div>
@@ -477,7 +508,11 @@ function getProcessOwnerHTML(){
 			$curProcess=explode("|",$recProcesses[$i]);
 			$absProcID=$curProcess[1];
 			$innerhtml.= ($i==0?"":"<hr>")."<h4 style='display:inline-block'><b>".$curProcess[0]."</b></h4>
-			<button type='submit' class='btn btn-danger' style='float:right' value='$absProcID'>Delete abstract process group</button>";
+			<form style='display:inline' action='".htmlspecialchars($_SERVER["PHP_SELF"])."' method='post'>
+				<button type='submit' class='btn btn-danger' style='float:right' value='$absProcID' name='deleteProcessGroup'>
+					Delete abstract process group
+				</button>
+			</form>";
 			$recOfProc=getRowsOfQuery("SELECT pr.ID,pr.title,p.personName,pr.status,pr.description,pg.latestVerProcID
 				FROM abstract_processes pr
 				LEFT JOIN persons p ON pr.submitterPersonID=p.ID
@@ -534,7 +569,7 @@ function getProcessOwnerHTML(){
 
 
 	//setting up profession assingment section
-	$innerhtml.="<hr style='border-color:lightgrey'><h2><b>Profession assignment</b> (to the latest version)</h2>";
+	$innerhtml.="<hr style='border-color:lightgrey'><h2><b>Process management</b></h2>";
 	$tasksRow = getRowsOfQuery("SELECT n.nodeID, n.name tasknev, n.professionID, n.raci, pg.name, n.ID
 		FROM abstract_nodes n, process_groups pg, abstract_processes ap 
 		WHERE ap.ID=pg.latestVerProcID AND n.abstractProcessID=ap.ID");

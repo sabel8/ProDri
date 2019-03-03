@@ -8,6 +8,7 @@ function see() {
 	for (var i = 0; i < events.length; i++) {
 		var mainEvent = events[i];
 		//not inspecting regular events
+		//thus mainevent is not regular
 		if(mainEvent.regular==true) {
 			continue;
 		}

@@ -3,33 +3,40 @@ require_once("config.php");
 $_SESSION['userID']=1;
 $userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
 
+//updating the status here
+$involvedProcesses=getRowsOfQuery("SELECT processID FROM nodes WHERE responsiblePersonID=$userID GROUP BY processID");
+for ($l=0; $l < count($involvedProcesses)-1; $l++) { 
+  $_GET['processID']=$involvedProcesses[$l];
+  require("php_functions/updateProcess.php");
+}
+
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
-  global $connection;
   // Execute code (such as database updates) here.
+  global $connection;
+  if (isset($_POST['startTask'])) {
+    $query = $connection->prepare("UPDATE nodes SET actualStart=NOW(),lastUpdateTime=NOW() WHERE ID=?");
+    $query->bind_param("i",$_POST['startTask']);
+    if ($query->execute()) {
+    } else {
+      echo "Error starting task!";
+    }
+  } else if (isset($_POST['finishTask'])) {
+    $query = $connection->prepare("UPDATE nodes SET actualFinish=NOW(),lastUpdateTime=NOW() WHERE ID=?");
+    $query->bind_param("i",$_POST['finishTask']);
+    if ($query->execute()) {
+    } else {
+      echo "Error finishing task!";
+    }
+  }
+
   foreach ($_POST as $key => $value) {
     if ($value!=-1){
       if (substr($key,0,11) == "taskDurSecs"){
         $nodeID=substr($key,11);
         $query = $connection->prepare("UPDATE nodes SET duration=?,lastUpdateTime=NOW(),durationReceived=NOW(),durationStatus=NULL WHERE ID=?");
         $query->bind_param("ii",$value,$nodeID);
-        if ($query->execute()) {
-        } else {
-          echo "Error while updating records!";
-        }
-      } else if (substr($key,0,9)=="startTask" and $value="Start"){
-        $query = $connection->prepare("UPDATE nodes SET startTime=NOW(),lastUpdateTime=NOW() WHERE ID=?");
-        $taskID=substr($key,9);
-        $query->bind_param("i",$taskID);
-        if ($query->execute()) {
-        } else {
-          echo "Error while updating records!";
-        }
-      } else if (substr($key,0,10)=="finishTask" and $value="Finish"){
-        $query = $connection->prepare("UPDATE nodes SET finishTime=NOW(),lastUpdateTime=NOW() WHERE ID=?");
-        $taskID=substr($key,10);
-        $query->bind_param("i",$taskID);
         if ($query->execute()) {
         } else {
           echo "Error while updating records!";
@@ -213,8 +220,8 @@ $(document).ready( function () {
   $innerhtml="<hr>";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
-     concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,'planned start',n.startTime
-	 ,'Planned finish..','Actual finish...',n.lastUpdateTime,n.priority,'sys log','dels','two buttons..',n.durationStatus,n.ID
+     concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,n.plannedStart,n.actualStart
+	 ,n.plannedFinish,n.actualFinish,n.lastUpdateTime,n.priority,'sys log',n.processID,n.durationStatus,n.ID
 		FROM nodes AS n
 		LEFT JOIN persons rp
 			ON n.responsiblePersonID=rp.ID 
@@ -236,13 +243,44 @@ $(document).ready( function () {
 	  "Last update at","Priority","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
       $curTask=explode("|",$tasks[$i]);
+
+      $nodeAbstractID=$curTask[0];
+      $plannedStart=$curTask[9];
+      $actualStart=$curTask[10];
+      $actualFinish=$curTask[12];
+      $processID=$curTask[count($curTask)-3];
+      $durStat=$curTask[count($curTask)-2];
       $nodeRealID=$curTask[count($curTask)-1];
-      $startTime=$curTask[10];
-      $durStat=$curTask[18];
       $innerhtml.="<tr>";
       //-2 because n.ID,n.durationStatus will not be displayed
-      for ($n=0;$n<count($curTask)-2;$n++) {
+      for ($n=0;$n<18;$n++) {
         switch ($n) {
+          //ID
+          case 0:$innerhtml.="<td>$nodeRealID</td>";break;
+          //input
+          case 5:
+            $predecessors=getRowsOfQuery("SELECT ID FROM nodes WHERE processID=$processID AND nodeID IN 
+              (SELECT fromNodeID FROM edges WHERE toNodeID=$nodeAbstractID AND processID=$processID)");
+            $innerhtml.="<td>";
+            $delCount=0;
+            for ($k=0; $k < count($predecessors)-1; $k++) {
+              $dir = "deliverables/$processID/{$predecessors[$k]}";
+              if (!file_exists($dir) or !is_dir($dir)) {continue;} 
+              if ($handle = opendir($dir)) {
+                  while (false !== ($entry = readdir($handle))) {
+                    if ($entry != "." && $entry != "..") {
+                      $innerhtml.="<a href='$dir/$entry'>$entry</a><br>";
+                      $delCount++;
+                    }
+                  }
+                  closedir($handle);
+              }
+            }
+            if ($delCount==0) {
+              $innerhtml.="No input is avaliable.</td>"; break;
+            }
+            $innerhtml.="</td>";
+            break;
           //status
           case 6:
             $innerhtml.="<td>".getStatusText($curTask[$n])."</td>";break;
@@ -254,19 +292,34 @@ $(document).ready( function () {
           case 8:
             $formHTML='<form action="" method="post">
             <input type="number" id="taskDurSecs'.$nodeRealID.'" name="taskDurSecs'.$nodeRealID.'"
-              style="width:50px" min="0" value="'.$curTask[$n].'"> seconds<br>
+              style="width:50px" min="0"> seconds<br>
             <input type="submit" class="btn btn-default" value="Submit"></form>';
             if ($durStat==1) {
               $innerhtml.="<td class='success'><p>ACCEPTED</p>".$curTask[$n]." seconds</td>";
             } else if ($durStat==="0") {
               $innerhtml.="<td class='danger'><p>REFUSED</p>$formHTML</td>";
             } else {
+              if ($curTask[$n]!="" && $durStat==""){
+                $formHTML=$curTask[$n]." second is submitted.<hr>".$formHTML;
+              }
               $innerhtml.="<td>$formHTML</td>";
             }
+            break;
+          //planned start
+          case 9:
+            $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet scheduled" : $curTask[$n]) ."</td>";
             break;
           //actual start
           case 10:
             $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet started" : $curTask[$n]) ."</td>";
+            break;
+          //planned finish
+          case 11:
+            $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet scheduled" : $curTask[$n]) ."</td>";
+            break;
+          //actual finish
+          case 12:
+            $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet finished" : $curTask[$n]) ."</td>";
             break;
           //deliverables
           case 16:
@@ -279,14 +332,30 @@ $(document).ready( function () {
             break;
           //start/finish button
           case 17:
-            $innerhtml.="<td><form action='' method='post'>";
-            if($startTime==null) {
-              $innerhtml .= "<input class='btn btn-success' type='submit' name='startTask".$nodeRealID."' value='Start'>";
+            $innerhtml.="<td>";
+            $predecessorStatus=getRowsOfQuery("SELECT status FROM nodes WHERE nodeID IN (SELECT fromNodeID
+            FROM edges WHERE processID=$processID AND toNodeID=$nodeAbstractID) AND processID=$processID");
+            $canBeStarted=true;
+            for ($j=0; $j < count($predecessorStatus)-1; $j++) { 
+              //if a predecessor task is not done
+              if ($predecessorStatus[$j]!="9") {$canBeStarted=false;break;}
+            }
+            if ($plannedStart=="") {
+              $innerhtml.="The process have not started yet, please wait.</td>"; break;
+            } else if (!$canBeStarted){
+              $innerhtml.="Not all predecessors are done, please wait.</td>"; break;
+            }
+            $innerhtml.="<form action='' method='post'>";
+            if($actualStart==null) {
+              $innerhtml .= "<button class='btn btn-success' type='submit' value='$nodeRealID' name='startTask'>Start</button>";
             } else {
-              $innerhtml .= "<input class='btn btn-danger' type='submit' name='finishTask".$nodeRealID."' value='Finish'>";
+              if ($actualFinish==""){
+              $innerhtml .= "<button class='btn btn-danger' type='submit' value='$nodeRealID' name='finishTask'>Finish</button>";
+              }
             }
             $innerhtml.="</form></td>";
             break;
+
           default:
             $innerhtml.="<td>".htmlspecialchars($curTask[$n])."</td>";
         }

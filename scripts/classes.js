@@ -221,6 +221,22 @@ function getRACItext(raci){
 	}
 	return txt;
 }
+
+
+//helper function for dropdown menu
+//called at new person record creating
+function getProfessions(){
+	var array;
+	var xmlhttp = new XMLHttpRequest();
+	xmlhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			array = this.responseText.split(";");
+		}
+	};
+	xmlhttp.open("GET", "php_functions/getdatas.php?q=getprofessions", false);
+	xmlhttp.send();
+	return array;
+}
 //end of node functions
 
 //EDGE CLASS

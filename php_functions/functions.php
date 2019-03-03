@@ -95,22 +95,22 @@ function getRACItext($value) {
 function getStatusText($value){
 	$txt="";
 	/*
-	-ID:0 Not yet started, no input avaiable, but should have been started 
-	-ID:1 Not yet started, no input avaiable, but should not have been started 
+	-ID:0 Not yet started, no input avaiable, and should not have been started 
+	-ID:1 Not yet started, no input avaiable, but should have been started 
 	-ID:2 Not yet started, there is avaiable input, but should have been started 
-	-ID:3 Not yet started, there is avaiable input, but should not have been started 
+	-ID:3 Not yet started, there is avaiable input, and should not have been started 
 	-ID:4 In progress, in time 
 	-ID:5 In progress, delayed, within buffer 
 	-ID:6 In progress, delayed, beyond buffer 
 	-ID:7 Failed (meg kellett volna, de nem sikerült és nem is fog belátható időn belül) 
 	-ID:8 Withdrawn (mégsem kell) 
-	-ID:9 Done 
+	-ID:9 Done
 	*/
 	switch($value) {
-		case 0:$txt="Not yet started, no input avaiable, but should have been started";break;
-		case 1:$txt="Not yet started, no input avaiable, but should not have been started";break;
+		case 0:$txt="Not yet started, no input avaiable, and should not have been started";break;
+		case 1:$txt="Not yet started, no input avaiable, but should have been started";break;
 		case 2:$txt="Not yet started, there is avaiable input, but should have been started";break;
-		case 3:$txt="Not yet started, there is avaiable input, but should not have been started";break;
+		case 3:$txt="Not yet started, there is avaiable input, and should not have been started";break;
 		case 4:$txt="In progress, in time";break;
 		case 5:$txt="In progress, delayed, within buffer";break;
 		case 6:$txt="In progress, delayed, beyond buffer";break;
