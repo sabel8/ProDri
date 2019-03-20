@@ -137,6 +137,7 @@ if (isset($_GET["auth"])){
 				<ul class="nav navbar-nav">
 					<li><a href="/prodri/index.php">Home</a></li>
 					<li><a href="/prodri/tasklist.php">My tasks</a></li>
+					<li><a href='/prodri/schedule.php'>My schedule</a></li>
 					<?php if($_SESSION["auth"]!="u"){
 						echo '<li><a href="/prodri/editdatabase.php">Edit database</a></li>';
 					} ?>
@@ -147,11 +148,8 @@ if (isset($_GET["auth"])){
 						} else {
 							echo "Manage recommendations";
 						}
-					} else {
-						echo "<li><a href='/prodri/schedule.php'>My schedule</a>";
+						echo "</a></li>";
 					} ?>
-					
-					</a></li>
 			    </ul>
 			    <ul class="nav navbar-nav navbar-right">
 			    	<li>

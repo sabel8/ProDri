@@ -3,13 +3,6 @@ require_once("config.php");
 $_SESSION['userID']=1;
 $userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
 
-//updating the status here
-$involvedProcesses=getRowsOfQuery("SELECT processID FROM nodes WHERE responsiblePersonID=$userID GROUP BY processID");
-for ($l=0; $l < count($involvedProcesses)-1; $l++) { 
-  $_GET['processID']=$involvedProcesses[$l];
-  require("php_functions/updateProcess.php");
-}
-
 //if post is set, update database then clear post
 //avoiding repetitive form submission
 if ($_POST) {
@@ -23,11 +16,47 @@ if ($_POST) {
       echo "Error starting task!";
     }
   } else if (isset($_POST['finishTask'])) {
-    $query = $connection->prepare("UPDATE nodes SET actualFinish=NOW(),lastUpdateTime=NOW() WHERE ID=?");
+    $query = $connection->prepare("UPDATE nodes SET actualFinish=NOW(),lastUpdateTime=NOW(),status=9 WHERE ID=?");
     $query->bind_param("i",$_POST['finishTask']);
     if ($query->execute()) {
     } else {
       echo "Error finishing task!";
+    }
+  } else if (isset($_POST['deleteDeliverable'])) {
+    $delPath = $connection->prepare("SELECT processID,ID FROM nodes WHERE ID=
+        (SELECT nodeID FROM deliverables WHERE ID=?) AND responsiblePersonID=?");
+    $delPath->bind_param("ii",$_POST['deleteDeliverable'],$_SESSION['userID']);
+    if ($delPath->execute()) {
+      $delPath->bind_result($delProcessID,$delNodeID);
+      $delPath->fetch();
+      $delPath->close();
+      unset($delPath);
+      $delFileName=getRowsOfQuery("SELECT name FROM deliverables WHERE ID=".$_POST['deleteDeliverable'])[0];
+      unlink("deliverables/$delProcessID/$delNodeID/$delFileName");
+    } else {
+      echo "Hack or error: ".mysqli_error($connection);
+      return;
+    }
+    $query = $connection->prepare("DELETE FROM deliverables WHERE ID=?");
+    $query->bind_param("i",$_POST['deleteDeliverable']);
+    if ( !($query->execute()) ) {
+      echo "Error deleting deliverable record!";
+    }
+  } else if (isset($_POST['deliverableRefuse'])) {
+    $query = $connection->prepare("UPDATE deliverables SET status=1 WHERE ID=?");
+    $query->bind_param("i",$_POST['deliverableRefuse']);
+    if ($query->execute()) {
+      $query->close();
+      unset($query);
+      //reopening the predecessor task
+      $query = $connection->prepare("UPDATE nodes SET actualFinish=null WHERE ID=(SELECT nodeID
+        FROM deliverables WHERE ID=?)");
+      $query->bind_param("i",$_POST['deliverableRefuse']);
+      if (!$query->execute()) {
+        echo "Error repoening the node!";
+      }
+    } else {
+      echo "Error refusing deliverable!";
     }
   }
 
@@ -49,6 +78,22 @@ if ($_POST) {
   exit();
 }
 
+//updating the status here
+$involvedProcesses=getRowsOfQuery("SELECT processID FROM nodes WHERE responsiblePersonID=$userID GROUP BY processID");
+//delete all non-done calendar event which is in the processes of the user
+$deleteSchedule=$connection->prepare("DELETE FROM unavaliable_timeslots WHERE nodeID IN 
+	(SELECT ID FROM nodes WHERE processID IN (SELECT processID FROM nodes 
+	WHERE responsiblePersonID=? GROUP BY processID) AND NOT status=9 AND actualFinish IS NULL)");
+$deleteSchedule->bind_param("i",$userID);
+if ($deleteSchedule->execute()) {
+} else {
+  echo "Error deleting events!";
+}
+for ($l=0; $l < count($involvedProcesses)-1; $l++) { 
+  $_GET['processID']=$involvedProcesses[$l];
+  require("php_functions/updateProcess.php");
+}
+
 include(TEMPLATE.DS."header.php");
 
 function getUserHTML($userID) {
@@ -65,42 +110,12 @@ function getUserHTML($userID) {
     GROUP BY pg.ID ORDER BY pg.name, title");
 	$innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
 	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
-		$cells=explode("|",$processesInvolvedRows[$i]);
-
-		//setting up the stringified node array
-		$nodesOfProc=getRowsOfQuery("SELECT nodeID,name,xCord,yCord,raci,abstractProcessID,description,professionID 
-    FROM abstract_nodes WHERE abstractProcessID=".$cells[0]);
-		$nodeString="";
-		for($n=0;$n<count($nodesOfProc)-1;$n++){
-			$curNode = explode("|",$nodesOfProc[$n]);
-			$nodeString.="[";
-			for($e=0;$e<count($curNode);$e++){
-				$nodeString.='\''.htmlspecialchars($curNode[$e]).'\',';
-			}
-			//cut down last colon
-			$nodeString = substr($nodeString,0,-1)."],";
-		}
-		//cut down last colon
-		$nodeString= substr($nodeString,0,-1);
-
-		//setting up the stringified edge array
-		$edgesOfProc=getRowsOfQuery("SELECT ID,fromNodeID,toNodeID FROM abstract_edges WHERE abstractProcessID=".$cells[0]);
-		$edgeString="";
-		for($n=0;$n<count($edgesOfProc)-1;$n++){
-        $curEdge = explode("|",$edgesOfProc[$n]);
-        $edgeString.="[";
-        for($e=0;$e<count($curEdge);$e++){
-          $edgeString.='\''.$curEdge[$e].'\',';
-        }
-        //cut down last colon
-        $edgeString = substr($edgeString,0,-1)."],";
-      }
-      //cut down last colon
-      $edgeString= substr($edgeString,0,-1);
-
-      $innerhtml.="<a class='list-group-item' onclick=\"title=null;processGroupID=".$cells[2].";
-        createRecommendation2([$nodeString],[$edgeString],".$cells[0].",true,false)
-        \" value='".$cells[0]."'>".$cells[1]."</a>";
+    $cells=explode("|",$processesInvolvedRows[$i]);
+    $nodeJSON=getNodesOfRec($cells[0]);
+    $edgeJSON=getEdgesOfRec($cells[0]);
+    $innerhtml.="<a class='list-group-item' onclick='title=null;processGroupID=".$cells[2].";
+        createRecommendation2($nodeJSON,$edgeJSON,{$cells[0]},true,false)'
+        value='{$cells[0]}'>{$cells[1]}</a>";
     }
 	$innerhtml.= "</div>";
 
@@ -172,8 +187,8 @@ function getUserHTML($userID) {
     $recomID=$curRec[0];
     $processID=$curRec[4];
     $title=$curRec[3];
-    $options.="<a class='list-group-item' data-dismiss='modal' onclick=\"var title='$title';processGroupID=$processID;
-      absProcID=$recomID;viewRec2([$nodeString],[$edgeString],$recomID,".$curRec[2].",true,false)\" value='".$curRec[0]."'>"
+    $options.="<a class='list-group-item' data-dismiss='modal' onclick='var title=\"$title\";processGroupID=$processID;
+      absProcID=$recomID;viewRec2($nodeString,$edgeString,$recomID,{$curRec[2]},true,false)' value='{$curRec[0]}'>"
       .($title==""?"":$title." : ").$curRec[1]." <span class='badge'>".$status."</span></a>";
 	}
 	$numOfRows=count($recs);
@@ -217,11 +232,11 @@ $(document).ready( function () {
  
   <h2><b>Tasks (for: <?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0]; ?>)</b></h2>
   <?php
-  $innerhtml="<hr>";
+  $innerhtml="";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
      concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,n.plannedStart,n.actualStart
-	 ,n.plannedFinish,n.actualFinish,n.lastUpdateTime,n.priority,'sys log',n.processID,n.durationStatus,n.ID
+	 ,n.plannedFinish,n.actualFinish,n.lastUpdateTime,n.priority,n.actualDuration,'sys log',n.processID,n.durationStatus,n.ID
 		FROM nodes AS n
 		LEFT JOIN persons rp
 			ON n.responsiblePersonID=rp.ID 
@@ -240,20 +255,22 @@ $(document).ready( function () {
   if (count($tasks)>1){
     $innerhtml.=getTableHeader(array("ID","Name","Description","Process (project)","Profession","Inputs",
 	  "Status","RACI","Estimated duration","Planned start","Actual start","Planned finish","Actual finish",
-	  "Last update at","Priority","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
+	  "Last update at","Priority","Actual Duration","Sytem message","Deliverable(s)","Start / Finish"),"tasksTable");
     for ($i=0;$i<count($tasks)-1;$i++) {
       $curTask=explode("|",$tasks[$i]);
 
       $nodeAbstractID=$curTask[0];
+      $status=$curTask[6];
       $plannedStart=$curTask[9];
       $actualStart=$curTask[10];
       $actualFinish=$curTask[12];
+      $actualDur=$curTask[15];
       $processID=$curTask[count($curTask)-3];
       $durStat=$curTask[count($curTask)-2];
       $nodeRealID=$curTask[count($curTask)-1];
       $innerhtml.="<tr>";
       //-2 because n.ID,n.durationStatus will not be displayed
-      for ($n=0;$n<18;$n++) {
+      for ($n=0;$n<19;$n++) {
         switch ($n) {
           //ID
           case 0:$innerhtml.="<td>$nodeRealID</td>";break;
@@ -261,15 +278,26 @@ $(document).ready( function () {
           case 5:
             $predecessors=getRowsOfQuery("SELECT ID FROM nodes WHERE processID=$processID AND nodeID IN 
               (SELECT fromNodeID FROM edges WHERE toNodeID=$nodeAbstractID AND processID=$processID)");
-            $innerhtml.="<td>";
+            $innerhtml.="<td><form method='post'>";
             $delCount=0;
             for ($k=0; $k < count($predecessors)-1; $k++) {
-              $dir = "deliverables/$processID/{$predecessors[$k]}";
+              $predecessorID = $predecessors[$k];
+              $dir = "deliverables/$processID/{$predecessorID}";
               if (!file_exists($dir) or !is_dir($dir)) {continue;} 
               if ($handle = opendir($dir)) {
                   while (false !== ($entry = readdir($handle))) {
                     if ($entry != "." && $entry != "..") {
-                      $innerhtml.="<a href='$dir/$entry'>$entry</a><br>";
+                      $curDeliverable =  explode("|",getRowsOfQuery("SELECT ID,status FROM deliverables 
+                        WHERE nodeID=$predecessorID AND name='$entry'")[0]);
+                      $curDelID = $curDeliverable[0];
+                      $curDelStatus = $curDeliverable[1];
+                      if ($curDelStatus==0) {
+                        $innerhtml .= "<button class='btn btn-danger' type='submit' name='deliverableRefuse'
+                          value='$curDelID'>Refuse</button>";
+                      } else if ($curDelStatus==1) {
+                        $innerhtml .="This input is refused.";
+                      }
+                      $innerhtml .= "<br><a href='$dir/$entry'>$entry</a><hr><br>";
                       $delCount++;
                     }
                   }
@@ -277,13 +305,23 @@ $(document).ready( function () {
               }
             }
             if ($delCount==0) {
-              $innerhtml.="No input is avaliable.</td>"; break;
+              $innerhtml.="No input is avaliable.";
             }
-            $innerhtml.="</td>";
+            $innerhtml.="</form></td>";
             break;
           //status
           case 6:
-            $innerhtml.="<td>".getStatusText($curTask[$n])."</td>";break;
+            switch ($curTask[$n]) {
+              case 4:
+                $colorClass = "class='success'";break;
+              case 5:
+                $colorClass = "class='warning'";break;
+              case 6:
+                $colorClass = "class='danger'";break;
+              default:
+                $colorClass = "";
+            }
+            $innerhtml.="<td $colorClass>".getStatusText($curTask[$n])."</td>";break;
           //raci
           case 7:
             $innerhtml.="<td>".getRACItext($curTask[$n])."</td>";
@@ -295,7 +333,7 @@ $(document).ready( function () {
               style="width:50px" min="0"> seconds<br>
             <input type="submit" class="btn btn-default" value="Submit"></form>';
             if ($durStat==1) {
-              $innerhtml.="<td class='success'><p>ACCEPTED</p>".$curTask[$n]." seconds</td>";
+              $innerhtml.="<td class='success'>".$curTask[$n]." seconds accepted</td>";
             } else if ($durStat==="0") {
               $innerhtml.="<td class='danger'><p>REFUSED</p>$formHTML</td>";
             } else {
@@ -321,17 +359,49 @@ $(document).ready( function () {
           case 12:
             $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet finished" : $curTask[$n]) ."</td>";
             break;
+          //Actual duration
+          case 15:
+            $innerhtml .= "<td>".($actualDur!=""?$actualDur." seconds":"Not set")."</td>"; break;
           //deliverables
-          case 16:
-            $innerhtml.='<td><form action="php_functions/uploadDel.php" method="post" enctype="multipart/form-data">
+          case 17:
+            $innerhtml.="<td>";
+            $foundDeliverable=false;
+            $dir = "deliverables/$processID/$nodeRealID";
+            if (file_exists($dir) or is_dir($dir)) {
+              if ($handle = opendir($dir)) {
+                while (false !== ($entry = readdir($handle))) {
+                  if ($entry != "." && $entry != "..") {
+                    $foundDeliverable=true;
+                    $curDel=explode("|",getRowsOfQuery("SELECT ID,status FROM deliverables WHERE nodeID=$nodeRealID AND name='$entry'")[0]);
+                    $curDelID=$curDel[0];
+                    $curDelStatus=$curDel[1];
+                    $innerhtml.=($curDelStatus==1?"Refused! ":"")."<form method='POST'><div style='white-space:nowrap'><a href='$dir/$entry'>$entry</a>
+                      <button type='submit' name='deleteDeliverable' value='$curDelID' class='btn btn-danger'>
+                      <span class='glyphicon glyphicon-trash'></span>
+                      </button></div></form>
+                      <hr>";
+                    $delCount++;
+                  }
+                }
+                $innerhtml = $foundDeliverable==true ? substr($innerhtml,0,-4): $innerhtml;
+                closedir($handle);
+              }
+            }
+            
+            if ($status==4 or $status==5 or $status==6){
+              $innerhtml.='<form action="php_functions/uploadDel.php" method="post" enctype="multipart/form-data">
                 <input type="file" name="fileToUpload" id="fileToUpload">
                 <button type="submit" class="btn btn-primary" value="'.$nodeRealID.'" name="submit">
-                  <span class="glyphicon glyphicon-upload"></span>Upload File
+                  <span class="glyphicon glyphicon-upload"></span>Upload deliverable
                 </button>
               </form></td>';
+            } else if ($foundDeliverable==false){
+              $innerhtml.="You cannot upload a deliverable.</td>";
+            }
+            
             break;
           //start/finish button
-          case 17:
+          case 18:
             $innerhtml.="<td>";
             $predecessorStatus=getRowsOfQuery("SELECT status FROM nodes WHERE nodeID IN (SELECT fromNodeID
             FROM edges WHERE processID=$processID AND toNodeID=$nodeAbstractID) AND processID=$processID");

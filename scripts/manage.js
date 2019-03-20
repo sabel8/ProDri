@@ -44,10 +44,10 @@ $(function(){
 
 function createRec(processGroupID,personID,reload) {
 	//getting the title of the recommendation
-	var person = prompt("Title of the recommendtaion", "Place Holder");
-	if(person==null) {
+	var title = prompt("Title of the recommendtaion", "Place Holder");
+	if(title==null) {
 		return -1;
-	} else if(person=="") {
+	} else if(title=="") {
 		alert("You have to give a proper name!");
 		return -1;
 	}
@@ -62,37 +62,38 @@ function createRec(processGroupID,personID,reload) {
 			newProcessID = this.responseText;
 		}
 	};
-	xmlhttp.send("q=newProcess&p="+processGroupID+"&from="+personID+"&title="+person);
+	xmlhttp.send("q=newProcess&p="+processGroupID+"&title="+title);
 	console.log("newProcessID="+newProcessID);
 
 	//appending the nodes and the edges to the related recommendation
-	updateElementsOfRec(newProcessID,false);
+	updateElementsOfRec(newProcessID);
 
 	if (reload==true){
-		location.reload(true);
+		//location.reload(true);
 	}
 	return newProcessID;
 }
 
 //sets the current nodes and edges array
 //to the recommendation is param
-function updateElementsOfRec(absProcessID,reload) {
-	console.log(runInsert(["absProcNodeDel",absProcessID]));
-	console.log(runInsert(["absProcEdgeDel",absProcessID]));
-
-	for (var i = 0; i < graphObj.nodes.length; i++) {
-		var c = graphObj.nodes[i];
-		//nodeID,name,xCord,yCord,professionID,raci,abstractProcessID,description
-		console.log(runInsert(["recNodes",c.ID,c.txt,c.x,c.y,c.knowledgeArea,c.RACI,absProcessID,c.desc]));
-	}
-
-	for (var i = 0; i < graphObj.edges.length; i++) {
-		var c = graphObj.edges[i];
-		console.log(runInsert(["recEdges",c.fromNodeID,c.toNodeID,absProcessID]));
-	}
-	if(reload==true) {
-		location.reload(true);
-	}
+function updateElementsOfRec(absProcessID) {
+	$.ajax({
+		url: "php_functions/setdatas.php",
+		method: "POST",
+		data: {
+			q: "updateRecElement",
+			recomID: absProcessID, 
+			nodes : JSON.stringify(graphObj.nodes),
+			edges : JSON.stringify(graphObj.edges)
+		},
+		beforeSend: function(){
+			console.log("LOADING...");
+		},
+		success: function(data){
+			console.log(data);
+			alert(data);
+		}
+	});
 }
 
 function withdraw(recomID){
@@ -281,18 +282,19 @@ function addNewRecNode(){
 function createRecommendation2(nodesParam,edgesParam,processID){
 	//setting up the global node array
 	nodes = [];
-	//nodeParam(nodeID,txt,x,y,raci,processID,desc)
+	//nodeParam(nodeID,name,xCord,yCord,raci,abstractProcessID,desc,professionID)
 	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
 	for(var i=0;i<nodesParam.length;i++){
 		var cur=nodesParam[i];
-		nodes[i]=new Node(Number(cur[0]),cur[1],Number(cur[2]),Number(cur[3]),0,Number(cur[7]),null,null,cur[4],cur[5],cur[6]);
+		nodes[i]=new Node(Number(cur.nodeID),cur.name,Number(cur.xCord),Number(cur.yCord),0,
+			Number(cur.professionID),null,null,cur.raci,cur.abstractProcessID,cur.description);
 	}
 
 	//setting up the global edge array
 	edges=[];
 	for(var i=0;i<edgesParam.length;i++){
 		var cur=edgesParam[i];
-		edges[i] = new Edge(cur[0],cur[1],cur[2]);
+		edges[i] = new Edge(cur.ID,cur.fromNodeID,cur.toNodeID);
 	}
 
 	closeGraph();
@@ -310,21 +312,22 @@ function createRecommendation2(nodesParam,edgesParam,processID){
 	graphObj.redraw();
 }
 
-function viewRec2(nodesParam,edgesParam,recomID,status,allowedCreation,spectateMode){
+function viewRec2(nodesParam,edgesParam,recomendationID,status,allowedCreation,spectateMode){
 	//setting up the global node array
 	nodes = [];
-	//nodeParam(nodeID,txt,x,y,raci,processID,desc)
+	//nodeParam(nodeID,name,xCord,yCord,raci,abstractProcessID,desc,professionID)
 	//constructor(ID, txt, x, y, status, knowledgeArea, responsiblePerson, duration, RACI, processID,desc){
 	for(var i=0;i<nodesParam.length;i++){
 		var cur=nodesParam[i];
-		nodes[i]=new Node(Number(cur[0]),cur[1],Number(cur[2]),Number(cur[3]),0,null,null,null,cur[4],cur[5],cur[6]);
+		nodes[i]=new Node(Number(cur.nodeID),cur.name,Number(cur.xCord),Number(cur.yCord),0,
+			Number(cur.professionID),null,null,cur.raci,cur.abstractProcessID,cur.description);
 	}
 
 	//setting up the global edge array
 	edges=[];
 	for(var i=0;i<edgesParam.length;i++){
 		var cur=edgesParam[i];
-		edges[i] = new Edge(cur[0],cur[1],cur[2]);
+		edges[i] = new Edge(cur.ID,cur.fromNodeID,cur.toNodeID);
 	}
 
 	
@@ -351,4 +354,5 @@ function viewRec2(nodesParam,edgesParam,recomID,status,allowedCreation,spectateM
 	reviseInAndOutputs();
 	parent.appendChild(graphObj.getSVGElement(parent.offsetWidth,400));
 	graphObj.redraw();
+	recomID =recomendationID;
 }

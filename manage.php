@@ -40,6 +40,12 @@ if (count($_POST)>0) {
 			//deleting process
 			} else if (isset($_POST['deleteProcess'])) {
 				$procID = (int) $_POST['deleteProcess'];
+				$query = $connection->prepare("DELETE FROM unavaliable_timeslots WHERE nodeID IN 
+					(SELECT ID FROM nodes WHERE processID=?)");
+				$query->bind_param("i",$procID);
+				if (!$query->execute()) {
+					die("Error while deleting process' timeslots!");
+				}
 				$query = $connection->prepare("DELETE FROM processes WHERE ID=?");
 				$query->bind_param("i",$procID);
 				if (!$query->execute()) {
@@ -226,22 +232,33 @@ include(TEMPLATE.DS."header.php");
 function getProjectManagerHTML(){
 	$innerhtml="<h2><b>All project and their processes</b></h2>";
 	$procOfProjects=getRowsOfQuery('SELECT projectName,pg.name,ap.title,pr.ID,pr.abstractProcessID,
-	pg.latestVerProcID,pr.startTime
+	pg.latestVerProcID,pr.startTime,pr.plannedFinish,pr.actualFinish,pr.status
 		FROM processes pr LEFT JOIN projects p ON p.ID=pr.projectID
 		LEFT JOIN process_groups pg ON pg.ID=pr.processGroupID
 		LEFT JOIN abstract_processes ap ON ap.ID=pr.abstractProcessID ORDER BY projectName');
 	if(count($procOfProjects)>=2){
-		$innerhtml.=getTableHeader(["Project name","Process","Name","Is up to date?","Status"],"projectOverview");
+		$innerhtml.=getTableHeader(["Project name","Process","Name","Is up to date?","Status",
+			"Original due date","Actual due date"],"projectOverview");
 		for($i=0;$i<count($procOfProjects)-1;$i++) {
 			$cells=explode("|",$procOfProjects[$i]);
 			$updated = $cells[4]==$cells[5];
-			$innerhtml.=getProcessRowTag($cells[3],"projectOverview",$updated?"success":"warning");
+			switch ($cells[9]) {
+				case 1:$status="Before time";$colorClass="success";break;
+				case 2:$status="In time";$colorClass="primary";break;
+				case 3:$status="Delayed, in buffer";$colorClass="warning";break;
+				case 4:$status="Delayed, out of buffer";$colorClass="danger";break;
+				default:$status="wtf".$cells[9];
+			}
+			$innerhtml.=getProcessRowTag($cells[3],"projectOverview",$updated?$colorClass:"warning");
 			for($n=0;$n<3;$n++){
 				$innerhtml.="<td>".$cells[$n]."</td>";
 			}
 			$innerhtml.="<td>".($updated?"Yes":"No. Newer version is avaliable!<i> Ide még kéne valami</i>")."</td>";
-			$status = isset($cells[6])?(strtotime($cells[6])<time()?"Started":"Not yet started"):"Instantiation";
-			$innerhtml.="<td>$status</td></tr>";
+			
+			$status = isset($cells[6])?(strtotime($cells[6])<time()?$status:"Not yet started"):"Instantiation";
+			$innerhtml.="<td>$status</td>";
+			$innerhtml.="<td>".(isset($cells[7])?$cells[7]:"")."</td>";
+			$innerhtml.="<td>".(isset($cells[8])?$cells[8]:"")."</td></tr>";
 		}
 		$innerhtml .= "</tbody></table></div>";
 	} else {

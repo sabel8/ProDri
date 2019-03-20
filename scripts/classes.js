@@ -10,11 +10,12 @@ class Node {
 		this.desc = desc;
 		this.RACI = RACI;
 		this.knowledgeArea = knowledgeArea;
+		this.status = status;
 		if (txt==="START"){
-			this.status = 2;
+			//this.status = 9;
 			this.duration=0;
 		} else if (txt==="FINISH"){
-			this.status = 0;
+			//this.status = 0;
 			this.duration=0;
 		} else {
 			/*this.knowledgeArea = getProfessionFromID(knowledgeArea);
@@ -25,14 +26,6 @@ class Node {
 			this.duration = duration;
 			this.output = 0;
 			this.input = 0;
-			// 0 : not yet started
-			// 1 : in progress
-			// 2 : done
-			if (status==null){
-				this.status = 0;
-			} else {
-				this.status = status;
-			}
 		}
 
 		this.toString = function(){
@@ -83,14 +76,11 @@ class Node {
 
 	getColor(){
 		let color; 
-		switch(this.status) {
-			case 0:
+		if (this.status<4) {
 			color = "#ff3333";
-			break;
-			case 1:
+		} else if (this.status>4 && this.status<7) {
 			color = "lightblue";
-			break;
-			case 2:
+		} else {
 			color = "#33cc33";
 		}
 		return color;

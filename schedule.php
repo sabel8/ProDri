@@ -4,7 +4,6 @@ $_SESSION['userID']=1;
 $userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
 $devmode=0;
 
-
 //database manipulation according to POST
 if($_POST) {
 	global $connection;
@@ -60,6 +59,23 @@ if($_POST) {
 	}
 }
 
+//updating the status here
+$involvedProcesses=getRowsOfQuery("SELECT processID FROM nodes WHERE responsiblePersonID=$userID GROUP BY processID");
+
+//delete all non-done calendar event which is in the processes of the user
+$deleteSchedule=$connection->prepare("DELETE FROM unavaliable_timeslots WHERE nodeID IN 
+	(SELECT ID FROM nodes WHERE processID IN (SELECT processID FROM nodes 
+	WHERE responsiblePersonID=? GROUP BY processID) AND NOT status=9 AND actualFinish IS NULL)");
+$deleteSchedule->bind_param("i",$userID);
+if ($deleteSchedule->execute()) {
+} else {
+  echo "Error deleting events!";
+}
+
+for ($l=0; $l < count($involvedProcesses)-1; $l++) { 
+  $_GET['processID']=$involvedProcesses[$l];
+  require("php_functions/updateProcess.php");
+}
 
 include(TEMPLATE.DS."header.php");
 

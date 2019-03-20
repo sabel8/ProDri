@@ -142,23 +142,15 @@ if ($q=="insert") {
 
 
 } else if ($q=="newProcess"){
-	$query = $connection->prepare("INSERT INTO abstract_processes (ID,title,submitterPersonID,processGroupID) 
-	VALUES (NULL,?,?,?)");
+	$query = $connection->prepare("INSERT INTO abstract_processes (title,submitterPersonID,processGroupID) 
+	VALUES (?,?,?)");
 
 	confirm($query);
-	$query->bind_param('sii',$_POST["title"],$_POST["from"],$_POST["p"]);
+	$query->bind_param('sii',$_POST["title"],$_SESSION["userID"],$_POST["p"]);
 
 	if ($query->execute()) {
 		//returns the ID of the abstract process
-		$query=$connection->prepare("SELECT ID FROM abstract_processes WHERE submitterPersonID=? AND processGroupID=? ORDER BY ID DESC");
-		confirm($query);
-		$query->bind_param('ii',$_POST["from"],$_POST["p"]);
-		$query->execute();
-		$result = $query->get_result();
-		while ($row = $result->fetch_assoc()){
-			echo implode(",", $row);
-			return;
-		}
+		echo $connection->insert_id;
 		
 	} else {
 	    echo "Error while updating record!";
@@ -258,6 +250,45 @@ if ($q=="insert") {
 		}
 	}
 
-	echo "<b>SUCCESSFUL CREATION</b>";
+	echo "SUCCESSFUL CREATION";
+} else if ($_POST["q"]=="updateRecElement") {
+	$nodes = json_decode($_POST['nodes'],true);
+	$edges = json_decode($_POST['edges'],true);
+	$apID = $_POST['recomID'];
+
+	$deleteEdgesSQL="DELETE FROM abstract_edges WHERE abstractProcessID=$apID";
+	if (!mysqli_query($connection, $deleteEdgesSQL)) {
+		echo "Error: " . $deleteEdgesSQL . "<br>" . mysqli_error($connection);
+	}
+	$deleteNodesSQL="DELETE FROM abstract_nodes WHERE abstractProcessID=$apID";
+	if (!mysqli_query($connection, $deleteNodesSQL)) {
+		echo "Error: " . $deleteNodesSQL . "<br>" . mysqli_error($connection);
+	}
+
+
+	//creating the nodes of the abstract process
+	for ($i=0; $i < count($nodes); $i++) {
+		$curNode=$nodes[$i];
+		$query=$connection->prepare("INSERT INTO abstract_nodes (nodeID,name,xCord,yCord,professionID,
+		raci,abstractProcessID,description) VALUES (?,?,?,?,?,?,?,?)");
+		$profession=($curNode['knowledgeArea']=="-1"?null:$curNode['knowledgeArea']);
+		$query->bind_param("isiiisis",$curNode['ID'],$curNode['txt'],$curNode['x'],$curNode['y'],$profession,
+		$curNode['RACI'],$apID,$curNode['desc']);
+		if(!$query->execute()) {
+			echo "ERROR creating a node to the new process. ".$query->error;return;
+		}
+	}
+
+	//creating the edges of the abstarct process
+	for ($i=0; $i < count($edges); $i++) { 
+		$curEdge = $edges[$i];
+		$query = $connection->prepare("INSERT INTO abstract_edges (fromNodeID,toNodeID,abstractProcessID) VALUES (?,?,?)");
+		$query->bind_param("iii",$curEdge['fromNodeID'],$curEdge['toNodeID'],$apID);
+		if(!$query->execute()) {
+			echo "ERROR creating an edge to the new process. ".$query->error;return;
+		}
+	}
+
+	echo "SUCCESSFUL UPDATE";
 }
 ?>
