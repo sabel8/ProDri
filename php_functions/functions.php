@@ -65,7 +65,7 @@ function getTableHeader($arr,$id){
 	for ($i=0; $i < count($arr); $i++) { 
 		$innerhtml.='<th class="text-center">'.$arr[$i].'</th>';
 	}					
-	$innerhtml.='</tr></thead><tbody class="text-center">';
+	$innerhtml.="</tr></thead><tbody id='{$id}Body' class='text-center'>";
 	return $innerhtml;
 }
 

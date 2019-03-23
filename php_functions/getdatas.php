@@ -177,6 +177,27 @@ if ($q=="nodes") {
 		$res = $res . implode(",",$row);
 	}
 	echo $res;
-
+} else if ($q=="getPersonInfo") {
+	$personID = $_REQUEST["personID"];
+	$query = $connection->prepare("SELECT personName,professionName,seniority
+		FROM persons per JOIN professions prof ON per.professionID=prof.ID WHERE per.ID=?");
+	$query->bind_param("i",$personID);
+	confirm($query);
+	$query->execute();
+	$query->bind_result($name,$profession,$seniority);
+	$query->fetch();
+	$resultArray = array($name,$profession,$seniority);
+	$query->close();
+	echo json_encode($resultArray,JSON_UNESCAPED_UNICODE);
+} else if ($q=="getPersonsList") {
+	$query = $connection->prepare("SELECT personName,professionName,seniority,per.ID FROM persons per
+	JOIN professions prof ON per.professionID=prof.ID");
+	$query->execute();
+	$resultArray = array();
+	$query->bind_result($name,$prof,$seniority,$ID);
+	while ($query->fetch()) {
+		$resultArray[] = array($name,$prof,$seniority,$ID);
 	}
+	echo json_encode($resultArray,JSON_UNESCAPED_UNICODE);
+}
 ?>

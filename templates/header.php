@@ -57,6 +57,8 @@ if (isset($_GET["auth"])){
 			echo '<script src="scripts/editdb.js"></script>';break;
 		case "/$root/schedule.php":
 			echo '<script src="scripts/schedule.js"></script>';break;
+		case "/$root/linemanager.php":
+			echo '<script src="scripts/linemanager.js"></script>';break;
 	}
 	?>
 	<script src="scripts/classes.js"></script>
@@ -150,6 +152,7 @@ if (isset($_GET["auth"])){
 						}
 						echo "</a></li>";
 					} ?>
+					<li><a href='/prodri/linemanager.php'>Line manager</a></li>
 			    </ul>
 			    <ul class="nav navbar-nav navbar-right">
 			    	<li>

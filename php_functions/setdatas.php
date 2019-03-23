@@ -158,7 +158,7 @@ if ($q=="insert") {
 
 
 
-} else if ($_POST["q"]=="withdraw") {
+} else if ($q=="withdraw") {
 	$recomID = $_POST["p"];
 	$query = $connection->prepare("DELETE FROM nodes WHERE processID=(SELECT forProcessID FROM recommendations r WHERE ID=?)");
 	$query->bind_param("i",$recomID);
@@ -191,7 +191,7 @@ if ($q=="insert") {
 	} else {
 	    echo "Error while recommendation nodes deletion!";
 	}
-} else if ($_POST["q"]=="newAbstractProcess") {
+} else if ($q=="newAbstractProcess") {
 	$nodes = json_decode($_POST['nodes'],true);
 	$edges = json_decode($_POST['edges'],true);
 	/* print_r($_POST);echo "<br><br>";
@@ -251,7 +251,7 @@ if ($q=="insert") {
 	}
 
 	echo "SUCCESSFUL CREATION";
-} else if ($_POST["q"]=="updateRecElement") {
+} else if ($q=="updateRecElement") {
 	$nodes = json_decode($_POST['nodes'],true);
 	$edges = json_decode($_POST['edges'],true);
 	$apID = $_POST['recomID'];
@@ -290,5 +290,83 @@ if ($q=="insert") {
 	}
 
 	echo "SUCCESSFUL UPDATE";
+} else if ($q=="addPerson") {
+	//check input
+	if ($_POST['personName']=="" or $_POST['profession']=="" or $_POST['seniority']=="") {
+		echo '<div class="alert alert-warning alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		You shall fill <strong>all fields</strong>.
+		</div>';
+		return;
+	}
+	//get ID of profession
+	$query = $connection->prepare("SELECT ID FROM professions WHERE
+		professionName=? AND seniority=?");
+	$query->bind_param("ss",$_POST['profession'],$_POST['seniority']);
+	$query->execute();
+	$query->bind_result($profID);
+	$query->fetch();
+	$query->close();
+	//if not exists, insert and get ID
+	if ( !is_numeric($profID)) {
+		$query = $connection->prepare("INSERT INTO professions (professionName,seniority) VALUES (?,?)");
+		$query->bind_param("ss",$_POST['profession'],$_POST['seniority']);
+		$query->execute();
+		$profID = $query->insert_id;
+		$query->close();
+	}
+	$query = $connection->prepare("SELECT ID FROM persons WHERE personName=? AND professionID=?");
+	$query->bind_param("si",$_POST['personName'],$profID);
+	$query->execute();
+	$query->bind_result($personID);
+	$query->fetch();
+	$query->close();
+	//if this person already exists
+	if ($personID != "") {
+		echo '<div class="alert alert-warning alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		<strong>Warning!</strong> This person already exists.
+		</div>';
+		return;
+	//else insert
+	} else {
+		$query = $connection->prepare("INSERT INTO persons (personName,professionID) VALUES (?,?)");
+		$query->bind_param("si",$_POST['personName'],$profID);
+		$query->execute();
+		$query->close();
+		echo mysqli_error($connection).'<div class="alert alert-success alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		<strong>Success!</strong> The person has been added.
+		</div>';
+		return;
+	}
+
+} else if ($q=="removePerson") {
+	//check input
+	if ($_POST['selectedID']=="" or $_POST['personName']=="" or $_POST['profession']==""
+	or $_POST['seniority']=="") {
+		echo '<div class="alert alert-warning alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		You shall fill <strong>all fields</strong>.
+		</div>';
+		return;
+	}
+	$query = $connection->prepare("DELETE FROM persons WHERE ID=? AND personName=? AND
+		professionID=(SELECT ID FROM professions WHERE professionName=? AND seniority=?)");
+		echo mysqli_error($connection);
+	$query->bind_param("isss",$_POST['selectedID'],$_POST['personName'],
+		$_POST['profession'],$_POST['seniority']);
+	$query->execute();
+	if ($connection->affected_rows==1) {
+		echo '<div class="alert alert-info alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		<strong>'.$_POST['personName'].'</strong> has been successfully deleted.
+		</div>';
+	} else {
+		echo '<div class="alert alert-danger alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		Could not delete <strong>'.$_POST['personName'].'</strong>.
+		</div>';
+	}
 }
 ?>
