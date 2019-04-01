@@ -67,3 +67,9 @@ hr {
 .form-group {
 	width: 100%;
 }
+
+.uploadLabel {
+	cursor: pointer;
+	border: 2px solid rgb(0, 174, 255) ;
+	background-color: rgb(166, 227, 255)
+}

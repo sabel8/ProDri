@@ -34,20 +34,29 @@ include(TEMPLATE.DS."header.php");
 					<option>professional</option>
 				</select>
 			</div>
-			<div class="col-sm-4 form-inline">
-				<button class="btn btn-primary btn-lg" onclick="addPerson()">
+			<div class="col-sm-2 form-inline">
+				<label for="authority"><b>Authority:</b></label>
+				<select class="form-control" id="authority">
+					<option value=0>User</option>
+					<option value=1>Project manager</option>
+					<option value=2>Process Owner</option>
+					<option value=3>Line manager</option>
+				</select>
+			</div>
+			<div class="col-sm-2 form-inline">
+				<button class="btn btn-primary" onclick="addPerson()">
 					<span class="glyphicon glyphicon-plus"></span> Add person
 				</button> 
-				<button class="btn btn-danger btn-lg" onclick="removePerson()">
+				<button class="btn btn-danger" onclick="removePerson()">
 				<span class="glyphicon glyphicon-trash"></span> Remove person
 				</button>
 			</div>
 		</div>
 		<br>
 		<?php 
-		$persons = getRowsOfQuery("SELECT personName,professionName,seniority,per.ID FROM persons per
+		$persons = getRowsOfQuery("SELECT personName,professionName,seniority,per.ID,authority FROM persons per
 		JOIN professions prof ON per.professionID=prof.ID");
-		echo getTableHeader(["Person name","Profession","Seniority"],"personsTable");
+		echo getTableHeader(["Person name","Profession","Seniority","Authority"],"personsTable");
 		for ($i=0; $i < count($persons)-1; $i++) { 
 			$curPerson = explode("|",$persons[$i]);
 			$curID = $curPerson[3];
@@ -55,7 +64,15 @@ include(TEMPLATE.DS."header.php");
 			for ($j=0; $j < 3; $j++) { 
 				echo "<td>".$curPerson[$j]."</td>";
 			}
-			echo "</tr>";
+			echo "<td>";
+			switch ($curPerson[4]) {
+				case 0:echo "User";break;
+				case 1:echo "Project manager";break;
+				case 2:echo "Process owner";break;
+				case 3:echo "Line manager";break;
+				default:echo "ERROR";
+			}
+			echo "</td></tr>";
 		}
 		echo "</tbody></table></div>";
 		?>

@@ -87,10 +87,11 @@ function setCalendar() {
 		},
 		header: {
 			left: 'title',
-			center: 'agendaWeek,month,listWeek',
-			right: 'today prev,next'
+			center: 'agendaDay,agendaWeek,month,listWeek',
+			right: 'prev,next'
 		},
-		defaultView: 'agendaWeek',
+		defaultView: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)?
+			'agendaDay':'agendaWeek',
 		nowIndicator: true,
 
 		locale: "en-gb",

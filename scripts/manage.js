@@ -25,12 +25,18 @@ $(document).ready(function () {
         $that = $(this);
         $that.parent().find('li').removeClass('active');
 		$that.addClass('active');
-		
-    });
+	});
+
+	$("input[name=fileToUpload]").hide();
+
+	$("input[name=fileToUpload]").on('change',function(){
+		//todo validation for size (and maybe type)
+		$("label[for="+$(this).attr("id")).text(this.files[0].name);
+	});
 });
 
 //sets a beautiful blue background for active
-//selected list item
+//selected list navbar item
 $(function(){
     $('.list-group a').click(function(e) {
         e.preventDefault();
@@ -356,3 +362,48 @@ function viewRec2(nodesParam,edgesParam,recomendationID,status,allowedCreation,s
 	graphObj.redraw();
 	recomID =recomendationID;
 }
+
+function fileUpload(nodeID) {
+	var fd = new FormData($("#deliverableUploadForm"+nodeID)[0]);
+	fd.append('nodeID',nodeID);
+	$.ajax({
+		// Your server script to process the upload
+		url: 'php_functions/uploadDel.php',
+		type: 'POST',
+	
+		// Form data
+		data: fd,
+	
+		// Tell jQuery not to process data or worry about content-type
+		// You *must* include these options!
+		cache: false,
+		contentType: false,
+		processData: false,
+		beforeSend: function(){
+			$("#infoBox").html("Uploading... ");
+			console.log("Uploading... "+nodeID);
+		},
+		success: function(data){
+			$("#infoBox").html(data);
+		},
+	
+		// Custom XMLHttpRequest
+		/* xhr: function () {
+			var myXhr = $.ajaxSettings.xhr();
+			if (myXhr.upload) {
+			// For handling the progress of the upload
+				myXhr.upload.addEventListener('progress', function (e) {
+				if (e.lengthComputable) {
+					$('#progress'+nodeID).attr({
+						value: e.loaded,
+						max: e.total,
+					});
+				}
+			}, false);
+		  }
+		  return myXhr;
+		} */
+
+	});
+}
+

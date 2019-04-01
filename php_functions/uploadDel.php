@@ -1,9 +1,15 @@
 <?php
 require_once("../config.php");
 global $connection;
-echo "<a href='../tasklist.php'>GO BACK TO TASKLIST</a><br><br>";
-if(isset($_POST['submit'])) {
-	$nodeID = $_POST['submit'];
+if((file_exists($_FILES['fileToUpload']['tmp_name']) AND is_uploaded_file($_FILES['fileToUpload']['tmp_name'])) 
+	AND isset($_POST['nodeID'])) {
+	$nodeID = $_POST['nodeID'];
+	//check file size
+	if ($_FILES["fileToUpload"]["size"] > 50000000) { //50 MB
+		echo "Sorry, your file is too large.";
+		$uploadOk = 0;
+	}
+	//checks if person is valid and fetch ID of the process
 	$processID = getRowsOfQuery("SELECT processID FROM nodes WHERE ID=$nodeID
 	AND responsiblePersonID=".intval($_SESSION['userID']))[0];
 	if($processID==""){
@@ -13,18 +19,17 @@ if(isset($_POST['submit'])) {
 	if (!file_exists($target_dir)) {
 		mkdir($target_dir, 0777, true);
 	}
-	if ($_FILES["fileToUpload"]["size"] > 5000000) { //5 MB
-		echo "Sorry, your file is too large.";
-		$uploadOk = 0;
-	}
+	
 } else {
+	echo "Please, choose a file to upload!";
 	exit();//false call
 }
 $fileName = basename($_FILES["fileToUpload"]["name"]);
 $target_file = $target_dir . "/" . $fileName;
 $uploadOk = 1;
-
+//upload file
 if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
+	//create record for the file
 	if (! mysqli_query($connection,"INSERT INTO deliverables (name,nodeID) VALUES ('$fileName',$nodeID)")) {
 		echo "SQL ERROR: ".mysqli_error($connection);
 	}

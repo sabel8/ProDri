@@ -292,7 +292,7 @@ if ($q=="insert") {
 	echo "SUCCESSFUL UPDATE";
 } else if ($q=="addPerson") {
 	//check input
-	if ($_POST['personName']=="" or $_POST['profession']=="" or $_POST['seniority']=="") {
+	if ($_POST['personName']=="" or $_POST['profession']=="" or $_POST['seniority']=="" or $_POST['authority']=="") {
 		echo '<div class="alert alert-warning alert-dismissible fade in">
 		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
 		You shall fill <strong>all fields</strong>.
@@ -330,8 +330,12 @@ if ($q=="insert") {
 		return;
 	//else insert
 	} else {
-		$query = $connection->prepare("INSERT INTO persons (personName,professionID) VALUES (?,?)");
-		$query->bind_param("si",$_POST['personName'],$profID);
+		$username = trim(str_replace(" ","",strtolower($_POST['personName'])));
+		$query = $connection->prepare("INSERT INTO persons (personName,username,password,authority,professionID)
+		VALUES (?,?,?,?,?)");
+		//"prodri" is the default password
+		$passwd = md5("prodri");
+		$query->bind_param("sssii",$_POST['personName'],$username,$passwd,$_POST['authority'],$profID);
 		$query->execute();
 		$query->close();
 		echo mysqli_error($connection).'<div class="alert alert-success alert-dismissible fade in">

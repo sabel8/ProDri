@@ -1,7 +1,6 @@
 <?php
 require_once("config.php");
-$_SESSION['userID']=1;
-$userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
+$userID=$_SESSION['userID'];
 $devmode=0;
 
 //database manipulation according to POST
@@ -92,7 +91,8 @@ include(TEMPLATE.DS."header.php");
 			echo '<button type="button" class="btn btn-default" onclick="see()">Events</button>';
 		}
 		?>		
-		<h2>My schedule (<?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0];?>)</h2>
+		<h2>My schedule</h2>
+		<hr>
 		<div id="calendar"></div>
 	</div>
 	

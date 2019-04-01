@@ -1,13 +1,20 @@
-<?php 
+<?php
+if (isset($_POST["logout"])){
+	session_unset();
+	setcookie('loginMessage',"Successfully logged out!");
+}
 //initialize auth session variable
-if (!isset($_SESSION["auth"])){
-	$_SESSION["auth"] = "u";
+if (!isset($_SESSION["auth"]) or !isset($_SESSION['userID']) or !isset($_SESSION['personName'])){
+	setcookie('redirectedFrom',$_SERVER['PHP_SELF']);
+	setcookie('loginMessage',"You have to log in first!");
+	header('Location: '.$GLOBALS['HTTP_HOST'].DS.'prodri'.DS.'login.php');
+	exit;
+} else {
+	unset($_COOKIE['redirectedFrom']);
+	unset($_COOKIE['loginMessage']);
 }
 
-//sets the auth session variable if get is detected
-if (isset($_GET["auth"])){
-	$_SESSION["auth"] = $_GET["auth"];
-}
+
 ?>
 
 
@@ -133,17 +140,17 @@ if (isset($_GET["auth"])){
 		        <span class="icon-bar"></span>
 		        <span class="icon-bar"></span>
 		      </button>
-				<span class="navbar-brand"><a href="index.php">ProDri</a></span>
+				<span class="navbar-brand"><a href="tasklist.php"><b><i>ProDri</i></b></a></span>
 			</div>
 			<div class="collapse navbar-collapse" id="myNavbar">
 				<ul class="nav navbar-nav">
-					<li><a href="/prodri/index.php">Home</a></li>
+					<!-- <li><a href="/prodri/index.php">Home</a></li> -->
 					<li><a href="/prodri/tasklist.php">My tasks</a></li>
 					<li><a href='/prodri/schedule.php'>My schedule</a></li>
-					<?php if($_SESSION["auth"]!="u"){
+					<!-- <?php if($_SESSION["auth"]!="u"){
 						echo '<li><a href="/prodri/editdatabase.php">Edit database</a></li>';
-					} ?>
-					<?php if($_SESSION["auth"]!="u"){
+					} ?> -->
+					<?php if($_SESSION["auth"]=="pm" or $_SESSION["auth"]=="po"){
 						echo "<li><a href='/prodri/manage.php'>";
 						if($_SESSION["auth"]=="pm"){
 							echo "Assignments";
@@ -152,31 +159,25 @@ if (isset($_GET["auth"])){
 						}
 						echo "</a></li>";
 					} ?>
-					<li><a href='/prodri/linemanager.php'>Line manager</a></li>
+					
+					<?php if($_SESSION["auth"]=="lm"){
+						echo "<li><a href='/prodri/linemanager.php'>Line manager</a></li>";
+					} ?>
 			    </ul>
-			    <ul class="nav navbar-nav navbar-right">
-			    	<li>
-			    		<a>
-			    			<form id="authSelect">
-			    				<label>
-			    					<input id="projectManagerAuth" type="radio" name="authority" value="pm" onchange="switchAuth()"
-			    					<?php if($_SESSION["auth"]=="pm") echo "checked" ?>>
-			    					Project manager
-			    				</label>
-								<label>
-									<input id="processOwnerAuth" type="radio" name="authority" value="po" onchange="switchAuth()" 
-									<?php if($_SESSION["auth"]=="po") echo "checked" ?>>
-									Process owner
-								</label>
-								<label>
-									<input id="userAuth" type="radio" name="authority" value="u" onchange="switchAuth()"
-									<?php if($_SESSION["auth"]=="u") echo "checked" ?>>
-									User
-								</label>
-							</form>
-						</a>
-					</li>
-			    </ul>
+					<form method="post" id="logoutForm">
+						<ul class="nav navbar-nav navbar-right">
+							<li>
+								<a>
+									Welcome <?php /* print_r($_POST); */ echo $_SESSION['personName']?>!
+								</a>
+							</li>
+							<li>
+								<a href="login.php?p=logout">
+									<span class="glyphicon glyphicon-log-out"></span> Logout
+								</a>
+							</li>
+						</ul>
+					</form>
 			</div>
 		</div>
 	</nav>

@@ -190,13 +190,20 @@ if ($q=="nodes") {
 	$query->close();
 	echo json_encode($resultArray,JSON_UNESCAPED_UNICODE);
 } else if ($q=="getPersonsList") {
-	$query = $connection->prepare("SELECT personName,professionName,seniority,per.ID FROM persons per
+	$query = $connection->prepare("SELECT personName,professionName,seniority,per.ID,
+	CASE
+		WHEN authority = 0 THEN 'User'
+		WHEN authority = 1 THEN 'Project manager'
+		WHEN authority = 2 THEN 'Process owner'
+		WHEN authority = 3 THEN 'Line manager'
+	END
+	FROM persons per
 	JOIN professions prof ON per.professionID=prof.ID");
 	$query->execute();
 	$resultArray = array();
-	$query->bind_result($name,$prof,$seniority,$ID);
+	$query->bind_result($name,$prof,$seniority,$auth,$ID);
 	while ($query->fetch()) {
-		$resultArray[] = array($name,$prof,$seniority,$ID);
+		$resultArray[] = array($name,$prof,$seniority,$auth,$ID);
 	}
 	echo json_encode($resultArray,JSON_UNESCAPED_UNICODE);
 }

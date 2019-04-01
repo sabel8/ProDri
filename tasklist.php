@@ -1,7 +1,6 @@
 <?php
 require_once("config.php");
-$_SESSION['userID']=1;
-$userID=(isset($_SESSION['userID'])?$_SESSION['userID']:1);
+$userID=$_SESSION['userID'];
 
 //if post is set, update database then clear post
 //avoiding repetitive form submission
@@ -99,7 +98,7 @@ include(TEMPLATE.DS."header.php");
 function getUserHTML($userID) {
   global $connection;
   $username=getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0];
-  $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes: ($username)</b></h2><hr>";
+  $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes:</b></h2><hr>";
   //getting the processes which the user is included in
 	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
     FROM abstract_processes ap
@@ -108,8 +107,11 @@ function getUserHTML($userID) {
     LEFT JOIN nodes n ON n.processID = p.ID
     WHERE n.responsiblePersonID=$userID
     GROUP BY pg.ID ORDER BY pg.name, title");
-	$innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
-	for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
+  $innerhtml.="<div class='list-group' style='width:100%' name='involvedProcesses'>";
+  if (count($processesInvolvedRows)==1) {
+    $innerhtml.="<i>You are not involved in any processes!</i>";
+  } else {
+    for ($i=0;$i<count($processesInvolvedRows)-1;$i++) {
     $cells=explode("|",$processesInvolvedRows[$i]);
     $nodeJSON=getNodesOfRec($cells[0]);
     $edgeJSON=getEdgesOfRec($cells[0]);
@@ -117,6 +119,7 @@ function getUserHTML($userID) {
         createRecommendation2($nodeJSON,$edgeJSON,{$cells[0]},true,false)'
         value='{$cells[0]}'>{$cells[1]}</a>";
     }
+  }	
 	$innerhtml.= "</div>";
 
   //setting up the log table
@@ -230,9 +233,9 @@ $(document).ready( function () {
   <?php echo getUserHTML($userID)?>
 </div><div class="container well">
  
-  <h2><b>Tasks (for: <?php echo getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0]; ?>)</b></h2>
+  <h2><b>Tasks</b></h2>
   <?php
-  $innerhtml="";
+  $innerhtml="<div id='infoBox'></div>";
   //getting and setting the tasks table
   $tasks = getRowsOfQuery("SELECT n.nodeID, n.txt, n.description, concat(pg.name,' (',proj.projectName,')'),
      concat(prof.professionName,' (',prof.seniority,')'),'inputs', n.status, n.RACI, n.duration,n.plannedStart,n.actualStart
@@ -375,7 +378,8 @@ $(document).ready( function () {
                     $curDel=explode("|",getRowsOfQuery("SELECT ID,status FROM deliverables WHERE nodeID=$nodeRealID AND name='$entry'")[0]);
                     $curDelID=$curDel[0];
                     $curDelStatus=$curDel[1];
-                    $innerhtml.=($curDelStatus==1?"Refused! ":"")."<form method='POST'><div style='white-space:nowrap'><a href='$dir/$entry'>$entry</a>
+                    $innerhtml.=($curDelStatus==1?"Refused! ":"")."<form method='POST'><div style='white-space:nowrap'>
+                      <a href='$dir/$entry'>$entry</a>
                       <button type='submit' name='deleteDeliverable' value='$curDelID' class='btn btn-danger'>
                       <span class='glyphicon glyphicon-trash'></span>
                       </button></div></form>
@@ -389,12 +393,14 @@ $(document).ready( function () {
             }
             
             if ($status==4 or $status==5 or $status==6){
-              $innerhtml.='<form action="php_functions/uploadDel.php" method="post" enctype="multipart/form-data">
-                <input type="file" name="fileToUpload" id="fileToUpload">
-                <button type="submit" class="btn btn-primary" value="'.$nodeRealID.'" name="submit">
-                  <span class="glyphicon glyphicon-upload"></span>Upload deliverable
+              $innerhtml.='<form id="deliverableUploadForm'.$nodeRealID.'" enctype="multipart/form-data">
+                <label class="uploadLabel" for="fileToUpload'.$nodeRealID.'">Select...</label>
+                <input type="file" name="fileToUpload" id="fileToUpload'.$nodeRealID.'" required>
+                <button type="button" onclick="fileUpload('.$nodeRealID.')" class="btn btn-primary">
+                  <span class="glyphicon glyphicon-upload"></span> Upload deliverable
                 </button>
-              </form></td>';
+                
+              </form></td>';/* <progress id="progress'.$nodeRealID.'"></progress> */
             } else if ($foundDeliverable==false){
               $innerhtml.="You cannot upload a deliverable.</td>";
             }
@@ -435,7 +441,7 @@ $(document).ready( function () {
     }
     $innerhtml.="</tbody></table></div>";
   } else {
-    $innerhtml.="<div class='alert alert-success'>There isn't any task for you at the moment.</div>";
+    $innerhtml.="<i>There isn't any task for you at the moment.</i>";
   }
 
   echo $innerhtml;

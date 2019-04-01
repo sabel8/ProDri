@@ -35,7 +35,8 @@ function addPerson() {
 			q: "addPerson",
 			personName: $("#personName").val(),
 			profession: $("#profession").val(),
-			seniority: $("#seniority").val()
+			seniority: $("#seniority").val(),
+			authority: $("#authority").val()
 		},
 		beforeSend: function(){
 			$("#infoBox").html("");			
@@ -84,9 +85,10 @@ function refreshTable() {
 				bodyString+="<tr id='person"+id+"' onclick='choosePerson("+id+")'>"+
 				"<td>"+curPerson[0]+"</td>"+
 				"<td>"+curPerson[1]+"</td>"+
-				"<td>"+curPerson[2]+"</td></tr>";
+				"<td>"+curPerson[2]+"</td>"+
+				"<td>"+curPerson[4]+"</td>"+
+				"</tr>";
 			}
-			console.log(bodyString);
 			$("#personsTableBody").html(bodyString);
 		}
 	});

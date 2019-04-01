@@ -593,7 +593,8 @@ function getProcessOwnerHTML(){
 	if(count($tasksRow)>=2){
 		$innerhtml .= "<form action='".htmlspecialchars($_SERVER["PHP_SELF"])."' method='post'>";
 		$innerhtml.=getTableHeader(array("ID","Task name","Profession","RACI","Process group name"),"tasksTable");
-		$professionRow = getRowsOFQuery("SELECT ID,concat(professionName,' (',seniority,')') from professions");
+		$professionRow = getRowsOFQuery("SELECT ID,concat(professionName,' (',seniority,')') from professions
+		ORDER BY professionName ASC, seniority ASC");
 		for($i=0;$i<count($tasksRow)-1;$i++) {
 			$cells=explode("|",$tasksRow[$i]);
 			$innerhtml.="<tr>";
@@ -761,11 +762,6 @@ function getProcessRowTag($processID,$tableID,$colorClass){
 				</div>
 				<div class="modal-body">
 					<p id="objectInfo">Object info....</p>
-					<select id="statusSelect" onchange="/*selectStatus()*/">
-						<option value="notStartedOption">Not started</option>
-						<option value="inProgressOption">In progress</option>
-						<option value="doneOption">Done</option>
-					</select>
 				</div>
 				<div class="modal-footer">
 					<button style="float:left;" type="button" class="btn btn-danger" data-dismiss="modal"  onclick="deleteSelected()">Delete</button>
