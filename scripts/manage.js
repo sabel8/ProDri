@@ -33,6 +33,9 @@ $(document).ready(function () {
 		//todo validation for size (and maybe type)
 		$("label[for="+$(this).attr("id")).text(this.files[0].name);
 	});
+
+	//set the help popover
+	$('[data-toggle="popover"]').popover();
 });
 
 //sets a beautiful blue background for active
@@ -75,7 +78,7 @@ function createRec(processGroupID,personID,reload) {
 	updateElementsOfRec(newProcessID);
 
 	if (reload==true){
-		//location.reload(true);
+		location.reload(true);
 	}
 	return newProcessID;
 }

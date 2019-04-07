@@ -1,5 +1,10 @@
 var selectedPersonID;
 
+$(document).ready(function () {
+	//set the help popover
+	$('[data-toggle="popover"]').popover();
+});
+
 function choosePerson(personID) {
 	selectedPersonID = personID;
 	$("tr").removeClass("info");

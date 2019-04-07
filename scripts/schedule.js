@@ -1,6 +1,9 @@
 $(document).ready(function () {
 	// page is now ready, initialize the calendar...
 	setCalendar();
+	
+	//set the help popover
+	$('[data-toggle="popover"]').popover();
 });
 
 function see() {

@@ -103,23 +103,33 @@ class Node {
 }
 
 //seperates the text into words for readability
-function insertText(gEl, id, title) {
+function insertText(gEl, curNode) {
 	//returns if no valid title passed
-	if(title==null){
+	if(curNode.txt==null){
 		return;
 	}
-
 	//initialize the text element
 	var el = gEl.append("text")
-	.attr("text-anchor","middle")
-	.attr("dy", "-7.5");
-	if (title!="START" && title!="FINISH") {
-		el.append("tspan").html("ID: ").style("font-weight","bold");
-		el.append("tspan").text(id);
-		el.append("tspan").html("Name: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
-		el.append("tspan").text(title);
+	.attr("text-anchor","middle");
+	if (curNode.txt!="START" && curNode.txt!="FINISH") {
+		if (isAbstract==false && curNode.responsiblePerson!=null) {
+			el.attr("dy", "-14");
+			el.append("tspan").html("Person: ").style("font-weight","bold");
+			el.append("tspan").text(getPersonFromID(curNode.responsiblePerson));
+			el.append("tspan").html("Name: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
+			el.append("tspan").text(curNode.txt);
+			el.append("tspan").html("Status: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
+			el.append("tspan").text(getStatusFromID(curNode.status));
+		} else {
+			el.attr("dy", "-7.5");
+			el.append("tspan").html("ID: ").style("font-weight","bold");
+			el.append("tspan").text(curNode.ID);
+			el.append("tspan").html("Name: ").style("font-weight","bold").attr('x', 0).attr('dy', '20');
+			el.append("tspan").text(curNode.txt);
+		}
 	} else {
-		el.append("tspan").html(title).style("font-weight","bold").attr('x', 0).attr('dy', '5');
+		el.attr("dy", "-7.5");
+		el.append("tspan").html(curNode.txt).style("font-weight","bold").attr('x', 0).attr('dy', '5');
 	}
 	
 }
@@ -208,6 +218,24 @@ function getRACItext(raci){
 			break;
 		default:
 			txt="Error";
+	}
+	return txt;
+}
+
+function getStatusFromID(ID) {
+	var txt;
+	switch(ID) {
+		case 0:txt="Not yet started, no input avaiable, and should not have been started";break;
+		case 1:txt="Not yet started, no input avaiable, but should have been started";break;
+		case 2:txt="Not yet started, there is avaiable input, but should have been started";break;
+		case 3:txt="Not yet started, there is avaiable input, and should not have been started";break;
+		case 4:txt="In progress, in time";break;
+		case 5:txt="In progress, delayed, within buffer";break;
+		case 6:txt="In progress, delayed, beyond buffer";break;
+		case 7:txt="Failed";break;
+		case 8:txt="Withdrawn";break;
+		case 9:txt="Done";break;
+		default:txt="ERROR";
 	}
 	return txt;
 }
@@ -590,7 +618,7 @@ class Graph{
 		.attr("stroke","black");
 
 		g.each(function(d){
-			insertText(d3.select(this),d.ID,d.txt);
+			insertText(d3.select(this),d);
 		});
 
 		//removes the dragged uncomplete edge

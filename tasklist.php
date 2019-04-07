@@ -22,6 +22,7 @@ if ($_POST) {
       echo "Error finishing task!";
     }
   } else if (isset($_POST['deleteDeliverable'])) {
+    //get the processID and the nodeID for the path
     $delPath = $connection->prepare("SELECT processID,ID FROM nodes WHERE ID=
         (SELECT nodeID FROM deliverables WHERE ID=?) AND responsiblePersonID=?");
     $delPath->bind_param("ii",$_POST['deleteDeliverable'],$_SESSION['userID']);
@@ -30,32 +31,53 @@ if ($_POST) {
       $delPath->fetch();
       $delPath->close();
       unset($delPath);
+      //getting the name from the path
       $delFileName=getRowsOfQuery("SELECT name FROM deliverables WHERE ID=".$_POST['deleteDeliverable'])[0];
+      //deleting file
       unlink("deliverables/$delProcessID/$delNodeID/$delFileName");
     } else {
       echo "Hack or error: ".mysqli_error($connection);
       return;
     }
+    
+    //deleting deliverable statuses
+    $query = $connection->prepare("DELETE FROM deliverable_statuses WHERE delID=?");
+    $query->bind_param("i",$_POST['deleteDeliverable']);
+    if ( !($query->execute()) ) {
+      echo "Error deleting deliverable status record(s)!";
+    }
+
+    //deleting deliverable record
     $query = $connection->prepare("DELETE FROM deliverables WHERE ID=?");
     $query->bind_param("i",$_POST['deleteDeliverable']);
     if ( !($query->execute()) ) {
       echo "Error deleting deliverable record!";
     }
+    
   } else if (isset($_POST['deliverableRefuse'])) {
-    $query = $connection->prepare("UPDATE deliverables SET status=1 WHERE ID=?");
-    $query->bind_param("i",$_POST['deliverableRefuse']);
+    $query = $connection->prepare("INSERT INTO deliverable_statuses (delID,userID,status) VALUES (?,?,?)");
+    $refuseValue=1;
+    $query->bind_param("iii",$_POST['deliverableRefuse'],$userID,$refuseValue);
     if ($query->execute()) {
+      $lastID=$query->insert_id;
       $query->close();
       unset($query);
       //reopening the predecessor task
-      $query = $connection->prepare("UPDATE nodes SET actualFinish=null WHERE ID=(SELECT nodeID
-        FROM deliverables WHERE ID=?)");
-      $query->bind_param("i",$_POST['deliverableRefuse']);
+      $query = $connection->prepare("UPDATE nodes SET actualFinish=null WHERE ID=(SELECT nodeID FROM deliverables
+        WHERE ID=(SELECT nodeID FROM deliverable_statuses WHERE ID=?))");
+      $query->bind_param("i",$lastID);
       if (!$query->execute()) {
-        echo "Error repoening the node!";
+        echo "Error reopening the node! ".mysqli_error($connection);
       }
     } else {
-      echo "Error refusing deliverable!";
+      echo "Error refusing deliverable! ".mysqli_error($connection);
+    }
+  } else if (isset($_POST['deliverableAccept'])) {
+    $query = $connection->prepare("INSERT INTO deliverable_statuses (delID,userID,status) VALUES (?,?,?)");
+    $acceptValue=0;
+    $query->bind_param("iii",$_POST['deliverableAccept'],$userID,$acceptValue);
+    if (!$query->execute()) {
+      echo "Unsuccessful insert of del accept status! ".mysqli_error($connection);
     }
   }
 
@@ -97,7 +119,6 @@ include(TEMPLATE.DS."header.php");
 
 function getUserHTML($userID) {
   global $connection;
-  $username=getRowsOfQuery("SELECT personName FROM persons WHERE ID=$userID")[0];
   $innerhtml="<div class='row'><div class='col-sm-4'><h2><b>Processes:</b></h2><hr>";
   //getting the processes which the user is included in
 	$processesInvolvedRows=getRowsOfQuery("SELECT pg.latestVerProcID,pg.name,pg.ID
@@ -123,7 +144,10 @@ function getUserHTML($userID) {
 	$innerhtml.= "</div>";
 
   //setting up the log table
-	$innerhtml.="</div><div class='col-sm-8'><h2 style='color:red'><b>Info:</b></h2><hr>";
+  $innerhtml.="</div><div class='col-sm-8'><h2 style='color:red;display:inline-block'><b>Info:</b></h2>
+      <a href='#' data-toggle='popover' title='Popover Header' data-placement='left'
+			data-content='Some content inside the popover' style='font-size:38px;float:right'>
+			<span class='glyphicon glyphicon-question-sign'></span></a><hr>";
 	$recLogRows=getRowsOfQuery("SELECT p.name,timestamp,text FROM system_message_log log
       LEFT JOIN process_groups p ON log.processID=p.ID
       WHERE (typeID=16 or typeID=17 or typeID=18) 
@@ -230,7 +254,7 @@ $(document).ready( function () {
 } );
 </script>
 <script type="text/javascript" src="scripts/manage.js"></script>
-  <?php echo getUserHTML($userID)?>
+  <?php echo getUserHTML($_SESSION['userID'])?>
 </div><div class="container well">
  
   <h2><b>Tasks</b></h2>
@@ -279,6 +303,7 @@ $(document).ready( function () {
           case 0:$innerhtml.="<td>$nodeRealID</td>";break;
           //input
           case 5:
+            //selecting the predecessors' IDs
             $predecessors=getRowsOfQuery("SELECT ID FROM nodes WHERE processID=$processID AND nodeID IN 
               (SELECT fromNodeID FROM edges WHERE toNodeID=$nodeAbstractID AND processID=$processID)");
             $innerhtml.="<td><form method='post'>";
@@ -290,17 +315,21 @@ $(document).ready( function () {
               if ($handle = opendir($dir)) {
                   while (false !== ($entry = readdir($handle))) {
                     if ($entry != "." && $entry != "..") {
-                      $curDeliverable =  explode("|",getRowsOfQuery("SELECT ID,status FROM deliverables 
-                        WHERE nodeID=$predecessorID AND name='$entry'")[0]);
-                      $curDelID = $curDeliverable[0];
-                      $curDelStatus = $curDeliverable[1];
-                      if ($curDelStatus==0) {
-                        $innerhtml .= "<button class='btn btn-danger' type='submit' name='deliverableRefuse'
+                      $innerhtml .= "<a href='$dir/$entry'>$entry</a><br>";
+                      $curDelID = getRowsOfQuery("SELECT ID FROM deliverables WHERE nodeID=$predecessorID AND name='$entry'")[0];
+                      $curDelStatus = getRowsOfQuery("SELECT status FROM deliverable_statuses 
+                        WHERE delID=$curDelID AND userID=$userID")[0];
+                      if ($curDelStatus=="") {
+                        $innerhtml .= "<button class='btn btn-success' type='submit' name='deliverableAccept'
+                          value='$curDelID'>Accept</button>
+                        <button class='btn btn-danger' type='submit' name='deliverableRefuse'
                           value='$curDelID'>Refuse</button>";
+                      } else if ($curDelStatus==0) {
+                        $innerhtml .="<i>Accepted.</i>";
                       } else if ($curDelStatus==1) {
-                        $innerhtml .="This input is refused.";
+                        $innerhtml .="<i>Refused.</i>";
                       }
-                      $innerhtml .= "<br><a href='$dir/$entry'>$entry</a><hr><br>";
+                      $innerhtml.="<hr>";
                       $delCount++;
                     }
                   }
@@ -331,18 +360,28 @@ $(document).ready( function () {
             break;
           //duration
           case 8:
+            $deadline = getRowsOfQuery("SELECT estimationDeadline FROM processes WHERE ID=$processID")[0];
+            $deadlineHTML = $deadline==""?"":"<span style='color:red'><b>DEADLINE: </b>$deadline</span><br>";
             $formHTML='<form action="" method="post">
             <input type="number" id="taskDurSecs'.$nodeRealID.'" name="taskDurSecs'.$nodeRealID.'"
               style="width:50px" min="0"> seconds<br>
             <input type="submit" class="btn btn-default" value="Submit"></form>';
+            //accepted
             if ($durStat==1) {
               $innerhtml.="<td class='success'>".$curTask[$n]." seconds accepted</td>";
+            //refused
             } else if ($durStat==="0") {
-              $innerhtml.="<td class='danger'><p>REFUSED</p>$formHTML</td>";
+              $innerhtml.="<td class='danger'>REFUSED<br>$deadlineHTML $formHTML</td>";
+            //not reviewed
             } else {
+              //submitted
               if ($curTask[$n]!="" && $durStat==""){
                 $formHTML=$curTask[$n]." second is submitted.<hr>".$formHTML;
+              //not even submitted
+              } else {                
+                $formHTML=$deadlineHTML.$formHTML;
               }
+              //not submitted
               $innerhtml.="<td>$formHTML</td>";
             }
             break;
@@ -362,7 +401,7 @@ $(document).ready( function () {
           case 12:
             $innerhtml .= "<td>". ($curTask[$n]==null ? "Not yet finished" : $curTask[$n]) ."</td>";
             break;
-          //Actual duration
+          //Actual duration --- BUG
           case 15:
             $innerhtml .= "<td>".($actualDur!=""?$actualDur." seconds":"Not set")."</td>"; break;
           //deliverables
@@ -375,19 +414,20 @@ $(document).ready( function () {
                 while (false !== ($entry = readdir($handle))) {
                   if ($entry != "." && $entry != "..") {
                     $foundDeliverable=true;
-                    $curDel=explode("|",getRowsOfQuery("SELECT ID,status FROM deliverables WHERE nodeID=$nodeRealID AND name='$entry'")[0]);
+                    $curDel=explode("|",getRowsOfQuery("SELECT ID FROM deliverables WHERE nodeID=$nodeRealID AND name='$entry'")[0]);
                     $curDelID=$curDel[0];
-                    $curDelStatus=$curDel[1];
-                    $innerhtml.=($curDelStatus==1?"Refused! ":"")."<form method='POST'><div style='white-space:nowrap'>
-                      <a href='$dir/$entry'>$entry</a>
+                    $refusedPersons=getRowsOfQuery("SELECT personName FROM deliverable_statuses ds,persons p
+                      WHERE delID=$curDelID AND status=1 AND p.ID=ds.userID");
+                    $innerhtml.="<form action='' method='POST'>"
+                    .(count($refusedPersons)>1?"<i>Refused by ".implode("; ",$refusedPersons)."!</i><br>":""/*everybody accepted so far */).
+                    "<a href='$dir/$entry'>$entry</a>
                       <button type='submit' name='deleteDeliverable' value='$curDelID' class='btn btn-danger'>
                       <span class='glyphicon glyphicon-trash'></span>
-                      </button></div></form>
-                      <hr>";
+                      </button></form><hr>";
                     $delCount++;
                   }
                 }
-                $innerhtml = $foundDeliverable==true ? substr($innerhtml,0,-4): $innerhtml;
+                //$innerhtml = $foundDeliverable==true ? substr($innerhtml,0,-4): $innerhtml;
                 closedir($handle);
               }
             }
@@ -397,14 +437,12 @@ $(document).ready( function () {
                 <label class="uploadLabel" for="fileToUpload'.$nodeRealID.'">Select...</label>
                 <input type="file" name="fileToUpload" id="fileToUpload'.$nodeRealID.'" required>
                 <button type="button" onclick="fileUpload('.$nodeRealID.')" class="btn btn-primary">
-                  <span class="glyphicon glyphicon-upload"></span> Upload deliverable
-                </button>
-                
-              </form></td>';/* <progress id="progress'.$nodeRealID.'"></progress> */
+                  <span class="glyphicon glyphicon-upload"></span> Upload
+                </button></form>';
             } else if ($foundDeliverable==false){
-              $innerhtml.="You cannot upload a deliverable.</td>";
+              $innerhtml.="You cannot upload a deliverable.";
             }
-            
+            $innerhtml.="</td>";
             break;
           //start/finish button
           case 18:
@@ -423,7 +461,35 @@ $(document).ready( function () {
             }
             $innerhtml.="<form action='' method='post'>";
             if($actualStart==null) {
-              $innerhtml .= "<button class='btn btn-success' type='submit' value='$nodeRealID' name='startTask'>Start</button>";
+              //check if all inputs have been accepted by everybody
+              //go through the inputs and check if the number of successors
+              //corresponds to the number of the accepted statuses
+              $inputs = getRowsOfQuery("SELECT ID,name,nodeID from deliverables WHERE nodeID IN (SELECT ID FROM nodes 
+                WHERE processID=$processID AND nodeID IN (SELECT fromNodeID FROM edges WHERE toNodeID=$nodeAbstractID
+                AND processID=$processID))");
+              $allInputAccepted=true;
+              $notAcceptingUsers=array();
+              for ($j=0; $j < count($inputs)-1; $j++) { 
+                $curInputID = explode("|",$inputs[$j])[0];
+                $curInputName = explode("|",$inputs[$j])[1];
+                $curInputNodeID = explode("|",$inputs[$j])[2];
+                //gets the parent node's successors
+                $successors = getRowsOfQuery("SELECT personName FROM nodes n, persons p WHERE nodeID IN (SELECT toNodeID FROM edges
+                  WHERE processID=$processID AND fromNodeID=(SELECT nodeID FROM nodes WHERE ID=$curInputNodeID)) 
+                  AND NOT txt IN ('START','FINISH') AND p.ID=n.responsiblePersonID");
+                $acceptedInput = getRowsOfQuery("SELECT personName FROM deliverable_statuses ds, persons p
+                  WHERE status=0 AND delID=$curInputID AND p.ID=ds.userID");
+                if (count($acceptedInput) !== count($successors)) {
+                  //adding the not accepting persons to the sum of not accepting persons array
+                  $notAcceptingUsers=array_unique(array_merge(array_diff($successors,$acceptedInput),$notAcceptingUsers));
+                  $allInputAccepted=false;
+                }
+              }
+              if ($allInputAccepted===true) {
+                $innerhtml .= "<button class='btn btn-success' type='submit' value='$nodeRealID' name='startTask'>Start</button>";
+              } else {
+                $innerhtml.="Input is not accepted by: ".implode("; ",$notAcceptingUsers);
+              }
             } else {
               if ($actualFinish==""){
               $innerhtml .= "<button class='btn btn-danger' type='submit' value='$nodeRealID' name='finishTask'>Finish</button>";
@@ -443,7 +509,6 @@ $(document).ready( function () {
   } else {
     $innerhtml.="<i>There isn't any task for you at the moment.</i>";
   }
-
   echo $innerhtml;
     
     ?>

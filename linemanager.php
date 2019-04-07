@@ -5,7 +5,11 @@ include(TEMPLATE.DS."header.php");
 
 <div class="container">
 	<div class="well">
-		<h1>Line manager</h1>
+		<h1 style="display:inline-block">Line manager</h1>
+		<a href='#' data-toggle='popover' title='Popover Header' data-placement='left'
+			data-content='Some content inside the popover' style='font-size:38px;float:right'>
+			<span class='glyphicon glyphicon-question-sign'></span>
+		</a>
 		<hr>
 		<div id='infoBox'></div>
 		<div class="row">

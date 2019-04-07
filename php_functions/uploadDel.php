@@ -6,8 +6,10 @@ if((file_exists($_FILES['fileToUpload']['tmp_name']) AND is_uploaded_file($_FILE
 	$nodeID = $_POST['nodeID'];
 	//check file size
 	if ($_FILES["fileToUpload"]["size"] > 50000000) { //50 MB
-		echo "Sorry, your file is too large.";
-		$uploadOk = 0;
+		echo '<div class="alert alert-danger alert-dismissible fade in">
+		<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+		Sorry, there was an error uploading your file.</div>';
+		return;
 	}
 	//checks if person is valid and fetch ID of the process
 	$processID = getRowsOfQuery("SELECT processID FROM nodes WHERE ID=$nodeID
@@ -21,7 +23,9 @@ if((file_exists($_FILES['fileToUpload']['tmp_name']) AND is_uploaded_file($_FILE
 	}
 	
 } else {
-	echo "Please, choose a file to upload!";
+	echo '<div class="alert alert-warning alert-dismissible fade in">
+	<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+	Please choose a file to upload!</div>';
 	exit();//false call
 }
 $fileName = basename($_FILES["fileToUpload"]["name"]);
@@ -33,8 +37,12 @@ if (move_uploaded_file($_FILES["fileToUpload"]["tmp_name"], $target_file)) {
 	if (! mysqli_query($connection,"INSERT INTO deliverables (name,nodeID) VALUES ('$fileName',$nodeID)")) {
 		echo "SQL ERROR: ".mysqli_error($connection);
 	}
-	echo "The file ". basename( $_FILES["fileToUpload"]["name"]). " has been uploaded.";
+	echo '<div class="alert alert-success alert-dismissible fade in">
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    The file '. basename( $_FILES["fileToUpload"]["name"]). ' has been uploaded. Please refresh the page.</div>';
 } else {
-	echo "Sorry, there was an error uploading your file.";
+	echo '<div class="alert alert-danger alert-dismissible fade in">
+	<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+	Sorry, there was an error uploading your file.</div>';
 }
 ?>

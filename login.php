@@ -17,8 +17,10 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
 	$query->bind_param("ss",$_POST['username'],$_POST['password']);
 	$query->execute();
 	$query->store_result();
+	//unsuccessful login
 	if($query->num_rows == 0) {
 		$wrongCredentials=true;
+	//successful login
 	} else {
 		$query->bind_result($id,$name,$auth);
 		$query->fetch();
@@ -28,25 +30,27 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
 			case 0:
 				$_SESSION['auth'] = 'u';break;
 			case 1:
-				$_SESSION['auth'] = 'pm';break;
-			case 2:
 				$_SESSION['auth'] = 'po';break;
+			case 2:
+				$_SESSION['auth'] = 'pm';break;
 			case 3:
 				$_SESSION['auth'] = 'lm';break;
 			default: die("Wrong authority!");
 		}
+		//no redirect
 		if (isset($_COOKIE['redirectedFrom'])) {
-			header("Location: ".$GLOBALS['HTTP_HOST'].urldecode($_COOKIE['redirectedFrom']));
-			exit;
+			//or redirect from INDEX
+			if (urldecode($_COOKIE['redirectedFrom'])=="/prodri/index.php") {
+				header("Location: ".DS."prodri".DS."tasklist.php");
+			}
+			//redirect to tasklist as it is the main page
+			header("Location: ".urldecode($_COOKIE['redirectedFrom']));
 		} else {
-			header("Location: ".$GLOBALS['HTTP_HOST'].DS."prodri".DS."tasklist.php");
-			exit;
+			header("Location: ".DS."prodri".DS."tasklist.php");
 		}
+		exit;
 	}
-}/* 
-if ($wrongCredentials===true) {
-	$_COOKIE['loginMessage']=""
-} */
+}
 ?>
 
 <!DOCTYPE html>
@@ -61,7 +65,6 @@ if ($wrongCredentials===true) {
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 		<link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
 		
-
 		<!-- jQuery library -->
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>

@@ -1,5 +1,9 @@
 <?php
 require_once("config.php");
+if (!isset($_SESSION['userID'])) {
+	include(TEMPLATE.DS."header.php");
+	exit;
+}
 $userID=$_SESSION['userID'];
 $devmode=0;
 
@@ -77,9 +81,6 @@ for ($l=0; $l < count($involvedProcesses)-1; $l++) {
 }
 
 include(TEMPLATE.DS."header.php");
-
-
-//include("php_functions/loadEvents.php");
 ?>
 
 <div class="container">
@@ -90,7 +91,10 @@ include(TEMPLATE.DS."header.php");
 		if ($devmode==true) {
 			echo '<button type="button" class="btn btn-default" onclick="see()">Events</button>';
 		}
-		?>		
+		?><a href='#' data-toggle='popover' title='Popover Header' data-placement='left'
+			data-content='Some content inside the popover' style='font-size:38px;float:right'>
+			<span  class='glyphicon glyphicon-question-sign'></span>
+		</a>
 		<h2>My schedule</h2>
 		<hr>
 		<div id="calendar"></div>

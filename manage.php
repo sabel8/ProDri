@@ -230,7 +230,8 @@ if (count($_POST)>0) {
 include(TEMPLATE.DS."header.php");
 
 function getProjectManagerHTML(){
-	$innerhtml="<h2><b>All project and their processes</b></h2>";
+	$innerhtml="<h2 style='display:inline-block'><b>All project and their processes</b></h2>
+	<span style='font-size:40px;float:right' class='glyphicon glyphicon-question-sign'></span>";
 	$procOfProjects=getRowsOfQuery('SELECT projectName,pg.name,ap.title,pr.ID,pr.abstractProcessID,
 	pg.latestVerProcID,pr.startTime,pr.plannedFinish,pr.actualFinish,pr.status
 		FROM processes pr LEFT JOIN projects p ON p.ID=pr.projectID
@@ -243,11 +244,12 @@ function getProjectManagerHTML(){
 			$cells=explode("|",$procOfProjects[$i]);
 			$updated = $cells[4]==$cells[5];
 			switch ($cells[9]) {
+				case 0:$status="Instantiation";$colorClass="default";break;
 				case 1:$status="Before time";$colorClass="success";break;
 				case 2:$status="In time";$colorClass="primary";break;
 				case 3:$status="Delayed, in buffer";$colorClass="warning";break;
 				case 4:$status="Delayed, out of buffer";$colorClass="danger";break;
-				default:$status="wtf".$cells[9];
+				default:$status="wtf ".$cells[9];
 			}
 			$innerhtml.=getProcessRowTag($cells[3],"projectOverview",$updated?$colorClass:"warning");
 			for($n=0;$n<3;$n++){
@@ -255,7 +257,7 @@ function getProjectManagerHTML(){
 			}
 			$innerhtml.="<td>".($updated?"Yes":"No. Newer version is avaliable!<i> Ide még kéne valami</i>")."</td>";
 			
-			$status = isset($cells[6])?(strtotime($cells[6])<time()?$status:"Not yet started"):"Instantiation";
+			$status = $cells[6]!=""?(strtotime($cells[6])<time()?$status:"Not yet started"):"Instantiation";
 			$innerhtml.="<td>$status</td>";
 			$innerhtml.="<td>".(isset($cells[7])?$cells[7]:"")."</td>";
 			$innerhtml.="<td>".(isset($cells[8])?$cells[8]:"")."</td></tr>";
@@ -509,9 +511,11 @@ function getProjectManagerHTML(){
 }
 
 function getProcessOwnerHTML(){
-	$innerhtml="<a href='newProcess.php' class='btn btn-primary'>
-					Create new Process Group
-				</a><hr>";
+	$innerhtml="<a href='newProcess.php' class='btn btn-primary'>Create new Process Group</a>
+		<a href='#' data-toggle='popover' title='Popover Header' data-placement='left'
+			data-content='Some content inside the popover' style='font-size:38px;float:right'>
+			<span  class='glyphicon glyphicon-question-sign'></span>
+		</a><hr>";
 
 	//setting up recommendation management
 	$innerhtml.="<h2><b>Submitted recommendations</b></h2><br>";

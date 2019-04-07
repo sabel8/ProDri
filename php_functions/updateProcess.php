@@ -7,6 +7,13 @@ if (isset($_GET['processID'])) {
 	die("ProcessID shall be given in GET!");
 }
 
+//checks if the process is instantiated
+//if not, don't run the algorithm
+if (count(getRowsOfQuery("SELECT ID FROM nodes WHERE processID=$processID and (durationStatus IS NULL OR NOT durationStatus = 1)
+ AND NOT txt IN ('START','FINISH')"))>1) {
+	return;
+}
+
 global $connection;
 $nodeIDs = getRowsOfQuery("SELECT ID,nodeID FROM nodes WHERE processID = $processID AND NOT txt IN ('START','FINISH')");
 
@@ -73,14 +80,14 @@ for ($i=0; $i < count($inProgressInTimeTasks)-1; $i++) {
 	$nodeID = $curNode[0];
 	$nodeAbstractID = $curNode[1];
 	$duration = $curNode[2];
-	$userID = $curNode[3];
+	$curUserID = $curNode[3];
 	//select the last finishing event record of the predecessors of the task
 	$canBeStarted=getRowsOfQuery("SELECT UNIX_TIMESTAMP(ADDTIME(startTime,duration)) as end
 		FROM unavaliable_timeslots WHERE nodeID IN (SELECT ID FROM nodes WHERE processID=$processID AND 
 		nodeID IN (SELECT fromNodeID FROM edges WHERE toNodeID=$nodeAbstractID AND processID=$processID))
 		ORDER BY end DESC LIMIT 1 ")[0];
 	$canBeStarted = $canBeStarted==""?time():$canBeStarted;
-	setEventForTask($duration,$canBeStarted,$userID,$nodeID,$printInfo,false);
+	setEventForTask($duration,$canBeStarted,$curUserID,$nodeID,$printInfo,false);
 }
 
 //in progress, delayed
@@ -91,7 +98,7 @@ for ($i=0; $i < count($inProgressDelayedTasks)-1; $i++) {
 	$realNodeID = $curNode[0];
 	$nodeAbstractID = $curNode[1];
 	$duration = $curNode[2];
-	$userID = $curNode[3];
+	$curUserID = $curNode[3];
 	$canBeStarted = $curNode[4];
 	
 	$eventCounter=0;
@@ -99,11 +106,11 @@ for ($i=0; $i < count($inProgressDelayedTasks)-1; $i++) {
 	$nodeTitle = getRowsOfQuery("SELECT txt FROM nodes WHERE ID=$realNodeID")[0];
 	while (strtotime($endOfFreeTime) < time()){
 		$eventCounter++;
-		$freeStart = getFirstAvaliableTimeslot($userID,date('Y-m-d H:i:s', $canBeStarted));
+		$freeStart = getFirstAvaliableTimeslot($curUserID,date('Y-m-d H:i:s', $canBeStarted));
 		if (strtotime($freeStart) > time()) {
 			break;
 		}
-		$endOfFreeTime = getEndOfFreeTimeslot($userID,$freeStart);
+		$endOfFreeTime = getEndOfFreeTimeslot($curUserID,$freeStart);
 		if (strtotime($endOfFreeTime) >= time()) {
 			$partNo=$eventCounter>1?" (part ". $eventCounter .")":"";
 			$curDur= time() - strtotime($freeStart);
@@ -143,7 +150,7 @@ for ($i=0;$i<count($critPath);$i++) {
 		$nodeID = $curNode[0];
 		$nodeAbstractID = $curNode[1];
 		$duration = $curNode[2];
-		$userID = $curNode[3];
+		$curUserID = $curNode[3];
 		//select the last finishing event record of the predecessors of the task
 		$canBeStarted=getRowsOfQuery("SELECT UNIX_TIMESTAMP(ADDTIME(startTime,duration)) as end
 			FROM unavaliable_timeslots WHERE nodeID IN (SELECT ID FROM nodes WHERE processID=$processID AND 
@@ -152,7 +159,7 @@ for ($i=0;$i<count($critPath);$i++) {
 		if ($canBeStarted < time() or $canBeStarted=="") {
 			$canBeStarted=time();			
 		}
-		setEventForTask($duration,$canBeStarted,$userID,$nodeID,$printInfo,false);
+		setEventForTask($duration,$canBeStarted,$curUserID,$nodeID,$printInfo,false);
 	}
 }
 

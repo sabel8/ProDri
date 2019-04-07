@@ -1,12 +1,15 @@
 <?php
+//logout
 if (isset($_POST["logout"])){
 	session_unset();
 	setcookie('loginMessage',"Successfully logged out!");
 }
 //initialize auth session variable
 if (!isset($_SESSION["auth"]) or !isset($_SESSION['userID']) or !isset($_SESSION['personName'])){
-	setcookie('redirectedFrom',$_SERVER['PHP_SELF']);
-	setcookie('loginMessage',"You have to log in first!");
+	if ($_SERVER["PHP_SELF"]!="/prodri/index.php") {
+		setcookie('redirectedFrom',$_SERVER['PHP_SELF']);
+		setcookie('loginMessage',"You have to log in first!");
+	}
 	header('Location: '.$GLOBALS['HTTP_HOST'].DS.'prodri'.DS.'login.php');
 	exit;
 } else {
