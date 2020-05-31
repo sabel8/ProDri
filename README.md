@@ -2,6 +2,8 @@
 
 *Startup project which taught me PHP, HTML, CSS, JS, MySQL back when I was around 18. Not working on it anymore, left the code open for recruiters.*
 
+*Live demo avaliable at http://glasstiger.synology.me/prodri*
+
 The application's main aim is to help organizing the processes in a firm.
 ProDri stands for Process Driven, pointing to that processes are controlled by the software.
 
