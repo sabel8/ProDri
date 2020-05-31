@@ -5,7 +5,7 @@
 The application's main aim is to help organizing the processes in a firm.
 ProDri stands for Process Driven, pointing to that processes are controlled by the software.
 
-##The roles:
+## The roles:
 
 Every role has it's own unique page, with it's own functions.
 
@@ -27,7 +27,7 @@ Every role has it's own unique page, with it's own functions.
   * Creates and modifies the list of employees.
   * All of user's functions.
 
-##The features include:
+## The features include:
  * Managing processes inside projects.
  * Visual representation of a process with a native flow-diagram editor.
  * Ability of users to make recommendations for the process.
